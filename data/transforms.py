@@ -1,8 +1,9 @@
+import torch
 from torchvision.transforms import v2
 
 class TransformImage():
-    def __init__(self, image, Vl, Vg):
-        self.image = image
+    def __init__(self, Vl, Vg):
+        # self.image = image
         self.Vl = Vl
         self.Vg = Vg
         self.V = Vl + Vg
@@ -12,7 +13,7 @@ class TransformImage():
                 v2.RandomResizedCrop(256, scale=(0.08, 1.0)),
                 v2.RandomApply([v2.ColorJitter(0.8, 0.8, 0.8, 0.2)], p=0.8), #color jittering - brightness, contrast, saturation, hue,, 
                 v2.RandomGrayscale(p=0.2), #convert to grayscale with prob 0.2
-                v2.RandomApply([v2.GaussianBlur(kernel_size=7, sigma=(0.1, 2.0))], p=0.5)#(default prob - 0.5), #gaussian blur with prob 0.5
+                v2.RandomApply([v2.GaussianBlur(kernel_size=7, sigma=(0.1, 2.0))], p=0.5),#(default prob - 0.5), #gaussian blur with prob 0.5
                 v2.RandomApply([v2.RandomSolarize(threshold=128)], p=0.2),
                 v2.RandomHorizontalFlip(),
                 v2.RandomVerticalFlip(),
@@ -23,6 +24,6 @@ class TransformImage():
             ]
         )
 
-    def augment_image(self):
-        img = self.image.convert("RGB")
+    def augment_image(self, image):
+        img = image.convert("RGB")
         return torch.stack([self.aug_config(img) for _ in range(self.V)]) #This needs to be two diff local and global crops.
