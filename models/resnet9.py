@@ -15,7 +15,7 @@ class ResidualBlock(nn.Module):
             stride=stride,
             bias=False,
         )
-        self.conv_res1_bn = nn.BatchNorm2d(num_features=out_channels, momentum=0.9)
+        self.conv_res1_bn = nn.BatchNorm2d(num_features=out_channels, momentum=0.1)
         self.conv_res2 = nn.Conv2d(
             in_channels=out_channels,
             out_channels=out_channels,
@@ -23,7 +23,7 @@ class ResidualBlock(nn.Module):
             padding=padding,
             bias=False,
         )
-        self.conv_res2_bn = nn.BatchNorm2d(num_features=out_channels, momentum=0.9)
+        self.conv_res2_bn = nn.BatchNorm2d(num_features=out_channels, momentum=0.1)
 
         if stride != 1:
             # in case stride is not set to 1, we need to downsample the residual so that
@@ -36,7 +36,7 @@ class ResidualBlock(nn.Module):
                     stride=stride,
                     bias=False,
                 ),
-                nn.BatchNorm2d(num_features=out_channels, momentum=0.9),
+                nn.BatchNorm2d(num_features=out_channels, momentum=0.1),
             )
         else:
             self.downsample = None
@@ -52,7 +52,7 @@ class ResidualBlock(nn.Module):
         if self.downsample is not None:
             residual = self.downsample(residual)
 
-        return self.relu(out2) + residual
+        return self.relu(out2 + residual)
 
 
 class MLP(torch.nn.Sequential):
@@ -117,7 +117,7 @@ class Resnet9(nn.Module):
                 padding=1,
                 bias=False,
             ),
-            nn.BatchNorm2d(num_features=64, momentum=0.9),
+            nn.BatchNorm2d(num_features=64, momentum=0.1),
             nn.ReLU(inplace=False),
             nn.Conv2d(
                 in_channels=64,
@@ -127,7 +127,7 @@ class Resnet9(nn.Module):
                 padding=1,
                 bias=False,
             ),
-            nn.BatchNorm2d(num_features=128, momentum=0.9),
+            nn.BatchNorm2d(num_features=128, momentum=0.1),
             nn.ReLU(inplace=False),
             nn.MaxPool2d(kernel_size=2, stride=2),
             ResidualBlock(
@@ -145,7 +145,7 @@ class Resnet9(nn.Module):
                 padding=1,
                 bias=False,
             ),
-            nn.BatchNorm2d(num_features=256, momentum=0.9),
+            nn.BatchNorm2d(num_features=256, momentum=0.1),
             nn.ReLU(inplace=False),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(
@@ -156,7 +156,7 @@ class Resnet9(nn.Module):
                 padding=1,
                 bias=False,
             ),
-            nn.BatchNorm2d(num_features=256, momentum=0.9),
+            nn.BatchNorm2d(num_features=256, momentum=0.1),
             nn.ReLU(inplace=False),
             nn.MaxPool2d(kernel_size=2, stride=2),
             ResidualBlock(
@@ -173,4 +173,5 @@ class Resnet9(nn.Module):
 
     def forward(self, x):
         out = self.conv(x).flatten(1)
-        return self.fc(out)
+        # return self.fc(out)
+        return out
