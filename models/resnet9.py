@@ -105,7 +105,7 @@ class MLP(torch.nn.Sequential):
 class Resnet9(nn.Module):
     """A Residual network."""
 
-    def __init__(self, num_classes, num_channels, *args, **kwargs):
+    def __init__(self, num_classes=None, num_channels, *args, **kwargs):
         super(Resnet9, self).__init__()
 
         self.conv = nn.Sequential(
@@ -169,9 +169,10 @@ class Resnet9(nn.Module):
             nn.AdaptiveMaxPool2d((2, 2)),
         )
 
-        self.fc = nn.Linear(in_features=1024, out_features=num_classes, bias=True)
+        # self.fc = nn.Linear(in_features=1024, out_features=num_classes, bias=True)
 
     def forward(self, x):
         out = self.conv(x).flatten(1)
+        #output of dimension 1024, the covexnet embeddings
         # return self.fc(out)
         return out
