@@ -6,7 +6,7 @@ class TransformImage():
         # self.image = image
         self.Vl = Vl
         self.Vg = Vg
-        self.V = Vl + Vg
+        self.V = Vg #+ Vl
         self.aug_config = v2.Compose(
             [
                 ## Rethink this cropping, we need global and local crops with specific counts, Vl, and Vg. And Vl+Vg = V.
