@@ -105,7 +105,7 @@ class MLP(torch.nn.Sequential):
 class Resnet9(nn.Module):
     """A Residual network."""
 
-    def __init__(self, num_classes=None, num_channels, *args, **kwargs):
+    def __init__(self, num_classes, num_channels, *args, **kwargs):
         super(Resnet9, self).__init__()
 
         self.conv = nn.Sequential(
