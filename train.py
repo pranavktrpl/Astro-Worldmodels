@@ -1,5 +1,8 @@
 import os
 import random
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import torch
 import torch.nn as nn
@@ -63,7 +66,7 @@ class Resnet9Encoder(nn.Module):
     def __init__(self, proj_dim=128):
         super().__init__()
 
-        self.backbone = Resnet9(num_channels=3)
+        self.backbone = Resnet9(num_classes=1, num_channels=3)
         self.proj = MLP(
             in_channels=1024,
             hidden_channels=[2048, 2048, proj_dim],
@@ -220,6 +223,7 @@ def setup_wandb(cfg, rank):
         return None
 
     wandb.init(
+        entity=cfg.entity,
         project=cfg.project,
         name=cfg.run_name,
         config=asdict(cfg),
@@ -250,9 +254,9 @@ def main():
         dataset_name: str = "Smith42/galaxies"
         columns: list = None
         
-        bs: int = 4
-        eval_bs: int = 8
-        num_workers: int = 2
+        bs: int = 128
+        eval_bs: int = 256
+        num_workers: int = 1
 
         embed_dim: int = 1024
         proj_dim: int = 128
@@ -264,17 +268,18 @@ def main():
         lr: float = 5e-4
         wd: float = 5e-4
 
-        epochs: int = 2
-        warmup_steps: int = 100
-        total_steps: int = 5000
+        epochs: int = 4
+        warmup_steps: int = 1000
+        total_steps: int = 100000000  #100 M total stop condition, that's more than 12 epochs
         min_lr: float = 1e-6
 
         amp_dtype: str = "bf16"  #bf16 or fp16
 
+        entity: str = "pranavktrpl-personal"
         project: str = "astrojepa"
-        run_name: str = "resnet9_lejepa_smoke"
-        log_every: int = 100
-        ckpt_every: int = 200
+        run_name: str = "resnet9_lejepa_smoke_0504"
+        log_every: int = 10
+        ckpt_every: int = 8000    #Train size = 8Mill, 128 bs, 4 GPUs, 16k steps per epoch, save every 8k steps, 2 ckpts per epoch
         save_dir: str = "./checkpoints"
         resume_path: str | None = None
 
