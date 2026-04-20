@@ -1,10 +1,10 @@
 import torch
 # from torch.utils.data.distributed import DistributedSampler
 from .galaxies_source import GalaxiesSource
-from .transforms import TransformImage
+from .Astro-transforms import AstroMultiCropTransform
 
 class MyDataset(torch.utils.data.IterableDataset):#, DistributedSampler):
-    def __init__(self, split = "train", dataset = "Smith42/galaxies", columns = ["image", "image_crop", "galaxy_size"], shuffle = True, world_size = 1, rank = 0, Vg = 2, Vl = 0):
+    def __init__(self, split = "train", dataset = "Smith42/galaxies", columns = ["image", "image_crop", "galaxy_size"], shuffle = True, world_size = 1, rank = 0, Vg = 2, Vl = 8):
         self.ds = GalaxiesSource(dataset, columns, split)
         self.world_size = world_size
         self.rank = rank
@@ -12,7 +12,7 @@ class MyDataset(torch.utils.data.IterableDataset):#, DistributedSampler):
         self.epoch = 0
         self.stream = None
         
-        self.transformer = TransformImage(Vl, Vg)
+        self.transformer = AstroMultiCropTransform(Vl, Vg)
         
     def set_epoch(self, epoch):
         self.epoch = epoch
@@ -36,6 +36,8 @@ class MyDataset(torch.utils.data.IterableDataset):#, DistributedSampler):
         for sample in shard_dataset:
             # sample["image"] = transformer.augment_image(sample["image"])
             # sample["image_crop"] = self.transformer.augment_image(sample["image_crop"])
-            yield {"image_crop": self.transformer.augment_image(sample["image_crop"])}
+            # yield {"image_crop": self.transformer.augment_image(sample["image_crop"])}
+            crops = self.transformer.augment_image(sample["image_crop"])
+            yield crops
 
         # return iter(shard_dataset)

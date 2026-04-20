@@ -73,16 +73,28 @@ class Resnet9Encoder(nn.Module):
             norm_layer="batch_norm",
         )
 
-    def forward(self, x):
-        N, V = x.shape[:2]
+    def _encode_views(self, x):
+        # x: [B, V, C, H, W]
+        B, V = x.shape[:2]
+        flat = x.flatten(0, 1)                        # [B*V, C, H, W]
+        flat_emb = self.backbone(flat)                # [B*V, 1024]
+        flat_proj = self.proj(flat_emb)               # [B*V, P]
 
-        flat_emb = self.backbone(x.flatten(0, 1))                      # [N*V, 1024]
-        emb = flat_emb.reshape(N, V, -1).transpose(0, 1)  # [V, N, 1024]
-
-        proj = self.proj(flat_emb).reshape(N, V, -1).transpose(0, 1)  #[V, N, proj_dim]
-
+        emb = flat_emb.reshape(B, V, -1).transpose(0, 1)    # [V, B, 1024]
+        proj = flat_proj.reshape(B, V, -1).transpose(0, 1)  # [V, B, P]
         return emb, proj
 
+    def forward(self, global_x, local_x=None):
+        global_emb, global_proj = self._encode_views(global_x)
+
+        if local_x is None:
+            return global_emb, global_proj
+
+        local_emb, local_proj = self._encode_views(local_x)
+
+        emb = torch.cat([global_emb, local_emb], dim=0)     # globals first
+        proj = torch.cat([global_proj, local_proj], dim=0)  # globals first
+        return emb, proj
 
 def build_model(cfg, device, local_rank):
     model = Resnet9Encoder(proj_dim=cfg.proj_dim).to(device)
@@ -321,12 +333,17 @@ def main():
         pbar = tqdm(train_loader, disable=not is_main_process(rank), desc=f"epoch {epoch}")
 
         for step, batch in enumerate(pbar):
-            image_crops = batch["image_crop"].to(device, non_blocking=True)
+            # image_crops = batch["image_crop"].to(device, non_blocking=True)
+            global_crops = batch["global_crops"].to(device, non_blocking=True)
+
+            local_crops = batch["local_crops"]
+            if local_crops is not None:
+                local_crops = local_crops.to(device, non_blocking=True)
             
             opt.zero_grad(set_to_none=True)
 
             with autocast("cuda", dtype=amp_dtype):
-                emb, proj = model(image_crops)
+                emb, proj = model(global_crops, local_crops)
                 
                 loss, sim, sigreg = compute_lejepa_loss(proj = proj, sigreg_fn = sigreg_fn, lambd = cfg.lambd, num_global_views = cfg.Vg)
 
