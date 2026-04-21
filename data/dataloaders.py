@@ -1,7 +1,7 @@
 import torch
 # from torch.utils.data.distributed import DistributedSampler
 from .galaxies_source import GalaxiesSource
-from .Astro-transforms import AstroMultiCropTransform
+from .AstroTransforms import AstroMultiCropTransform
 
 class MyDataset(torch.utils.data.IterableDataset):#, DistributedSampler):
     def __init__(self, split = "train", dataset = "Smith42/galaxies", columns = ["image", "image_crop", "galaxy_size"], shuffle = True, world_size = 1, rank = 0, Vg = 2, Vl = 8):

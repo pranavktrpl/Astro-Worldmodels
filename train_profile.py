@@ -1,7 +1,11 @@
 import os
 import random
-from dotenv import load_dotenv
+import time
+from collections import defaultdict
+from dataclasses import asdict
+from pathlib import Path
 
+from dotenv import load_dotenv
 load_dotenv()
 
 import torch
@@ -9,68 +13,96 @@ import torch.nn as nn
 import torch.distributed as dist
 from torch.amp import GradScaler, autocast
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
+import wandb
 
 from data.dataloaders import MyDataset
 from models.resnet9 import Resnet9, MLP
-
-from configs.train_resnet9 import TrainConfig
-
-from dataclasses import dataclass, asdict
-from pathlib import Path
-from tqdm.auto import tqdm
-from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
-import wandb
+from configs.train_resnet9_profile import TrainConfig
 
 
-######################################################### ConvNet specific fast paths #########################################################
+#########################################################
+# ConvNet specific fast paths
+#########################################################
 torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.set_float32_matmul_precision("high")
 
 
-######################################################### DDP Setup + Dataloading #########################################################
+#########################################################
+# DDP Setup + Dataloading
+#########################################################
 def setup_ddp():
     dist.init_process_group(backend="nccl")
 
     world_size = dist.get_world_size()
-    rank = dist.get_rank()   #Which process this is globally, so rank is an init in the dataset object we created, cause every GPU gets a custom dataset object
-    local_rank = int(os.environ["LOCAL_RANK"])  #Just which GPU this is on the node, same as rank, no need honestly
+    rank = dist.get_rank()
+    local_rank = int(os.environ["LOCAL_RANK"])
 
-    torch.cuda.set_device(local_rank)  #Binds the process to the GPU, for if we stop mid way, and we want to resume, the process no is not mixed and we stick to same GPU always
+    torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
 
     return world_size, rank, local_rank, device
 
-def seed_everything(seed, rank):
+
+def seed_everything(seed: int, rank: int):
     seed = seed + rank
     random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
-def is_main_process(rank):
-    return rank == 0         #So we log only one main process, not all
-    
+
+def is_main_process(rank: int):
+    return rank == 0
+
+
 def build_train_loader(cfg, world_size, rank):
     train_ds = MyDataset(
-        split="train", dataset=cfg.dataset_name, columns=cfg.columns, shuffle=True, world_size=world_size, rank=rank, Vg=cfg.Vg, Vl=cfg.Vl
+        split="train",
+        dataset=cfg.dataset_name,
+        columns=cfg.columns,
+        shuffle=True,
+        world_size=world_size,
+        rank=rank,
+        Vg=cfg.Vg,
+        Vl=cfg.Vl,
     )
     train_loader = DataLoader(
-        train_ds, batch_size=cfg.bs, num_workers=cfg.num_workers, pin_memory=True, persistent_workers=(cfg.num_workers > 0),     #Currently yields {"image_crop": [Vg, 3, H, W]}
-    ) 
+        train_ds,
+        batch_size=cfg.bs,
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        persistent_workers=(cfg.num_workers > 0),
+    )
     return train_ds, train_loader
+
 
 def build_val_loader(cfg, world_size, rank):
     val_ds = MyDataset(
-        split="validation", dataset=cfg.dataset_name, columns=cfg.columns, shuffle=False, world_size=1, rank=0, Vg=cfg.Vg, Vl=cfg.Vl
+        split="validation",
+        dataset=cfg.dataset_name,
+        columns=cfg.columns,
+        shuffle=False,
+        world_size=1,
+        rank=0,
+        Vg=cfg.Vg,
+        Vl=cfg.Vl,
     )
     val_loader = DataLoader(
-        val_ds, batch_size=cfg.eval_bs, num_workers=cfg.num_workers, pin_memory=True, persistent_workers=(cfg.num_workers > 0),
+        val_ds,
+        batch_size=cfg.eval_bs,
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        persistent_workers=(cfg.num_workers > 0),
     )
     return val_ds, val_loader
 
 
-######################################################### Model = Backbone + Projector #########################################################
+#########################################################
+# Model = Backbone + Projector
+#########################################################
 class Resnet9Encoder(nn.Module):
     def __init__(self, proj_dim=128):
         super().__init__()
@@ -106,7 +138,7 @@ class Resnet9Encoder(nn.Module):
         return emb, proj
 
 
-def init_weights(m):                      #Kaiming weight initialization
+def init_weights(m):
     if isinstance(m, nn.Conv2d):
         nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
         if m.bias is not None:
@@ -123,20 +155,25 @@ def init_weights(m):                      #Kaiming weight initialization
         if m.bias is not None:
             nn.init.zeros_(m.bias)
 
+
 def build_model(cfg, device, local_rank):
     model = Resnet9Encoder(proj_dim=cfg.proj_dim)
     model.apply(init_weights)
     model = model.to(device)
-    model = DDP(model, 
-                device_ids=[local_rank], 
-                output_device=local_rank,
-                broadcast_buffers=False,
-                gradient_as_bucket_view=True,
-                static_graph=True,
+    model = DDP(
+        model,
+        device_ids=[local_rank],
+        output_device=local_rank,
+        broadcast_buffers=False,
+        gradient_as_bucket_view=True,
+        static_graph=True,
     )
     return model
 
-######################################################### Custom LEJEPA Loss + Training requirements #########################################################
+
+#########################################################
+# Custom LEJEPA Loss + Training requirements
+#########################################################
 class SIGReg(nn.Module):
     def __init__(self, knots=17, num_slices=256):
         super().__init__()
@@ -173,7 +210,6 @@ def compute_lejepa_loss(proj, sigreg_fn, lambd, num_global_views):
     centers = global_proj.mean(0)                     # [B, P]
 
     sim = (centers.unsqueeze(0) - proj).square().mean()
-
     sigreg = torch.stack([sigreg_fn(proj[v]) for v in range(proj.size(0))]).mean()
 
     loss = (1 - lambd) * sim + lambd * sigreg
@@ -207,6 +243,7 @@ def build_optimizer_and_scheduler(cfg, model):
 
     return opt, scheduler
 
+
 def build_amp(cfg):
     if cfg.amp_dtype == "bf16":
         amp_dtype = torch.bfloat16
@@ -219,8 +256,10 @@ def build_amp(cfg):
 
     return amp_dtype, scaler
 
-######################################################### Checkpoint loading + saving #########################################################
 
+#########################################################
+# Checkpoint loading + saving
+#########################################################
 def save_checkpoint(cfg, model, optimizer, scheduler, scaler, epoch, global_step, path):
     ckpt = {
         "model": model.module.state_dict() if isinstance(model, DDP) else model.state_dict(),
@@ -235,6 +274,7 @@ def save_checkpoint(cfg, model, optimizer, scheduler, scaler, epoch, global_step
         "cuda_rng": torch.cuda.get_rng_state_all(),
     }
     torch.save(ckpt, path)
+
 
 def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, device="cuda"):
     ckpt = torch.load(path, map_location=device)
@@ -265,6 +305,7 @@ def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, de
 
     return start_epoch, global_step
 
+
 def setup_wandb(cfg, rank):
     if not is_main_process(rank):
         return None
@@ -274,9 +315,10 @@ def setup_wandb(cfg, rank):
         project=cfg.project,
         name=cfg.run_name,
         config=asdict(cfg),
-        mode="online",   # change to "offline" if cluster internet is flaky
+        mode="online",
     )
     return wandb
+
 
 def ddp_mean(x, world_size):
     if not torch.is_tensor(x):
@@ -286,8 +328,25 @@ def ddp_mean(x, world_size):
     y /= world_size
     return y
 
-######################################################### Main training loop #########################################################
 
+def ddp_mean_max(value, device):
+    t = torch.tensor([value], device=device, dtype=torch.float64)
+    t_mean = t.clone()
+    t_max = t.clone()
+    dist.all_reduce(t_mean, op=dist.ReduceOp.SUM)
+    t_mean /= dist.get_world_size()
+    dist.all_reduce(t_max, op=dist.ReduceOp.MAX)
+    return t_mean.item(), t_max.item()
+
+
+def sync_time(device):
+    torch.cuda.synchronize(device)
+    return time.perf_counter()
+
+
+#########################################################
+# Main training loop
+#########################################################
 def main():
     world_size, rank, local_rank, device = setup_ddp()
     seed_everything(seed=42, rank=rank)
@@ -295,26 +354,31 @@ def main():
     if is_main_process(rank):
         print(f"world_size = {world_size}, rank = {rank}, local_rank = {local_rank}")
 
-    # temporary config placeholder
     cfg = TrainConfig()
 
     train_ds, train_loader = build_train_loader(cfg, world_size, rank)
-    val_ds, val_loader = build_val_loader(cfg, world_size, rank)
+
+    if not cfg.profile_enabled:
+        val_ds, val_loader = build_val_loader(cfg, world_size, rank)
+    else:
+        val_ds, val_loader = None, None
 
     model = build_model(cfg, device, local_rank)
-
     sigreg_fn = SIGReg().to(device)
-
     opt, scheduler = build_optimizer_and_scheduler(cfg, model)
     amp_dtype, scaler = build_amp(cfg)
 
     Path(cfg.save_dir).mkdir(parents=True, exist_ok=True)
 
-    wandb_run = setup_wandb(cfg, rank)
-    # print(f"Config: {cfg}")
+    if cfg.profile_enabled:
+        wandb_run = None if cfg.profile_disable_wandb else setup_wandb(cfg, rank)
+    else:
+        wandb_run = setup_wandb(cfg, rank)
 
     start_epoch = 0
     global_step = 0
+    profile_stats = defaultdict(list)
+    profile_done = False
 
     if cfg.resume_path is not None:
         start_epoch, global_step = load_checkpoint(
@@ -333,42 +397,66 @@ def main():
         model.train()
 
         pbar = tqdm(train_loader, disable=not is_main_process(rank), desc=f"epoch {epoch}")
+        end_of_last_iter = time.perf_counter()
 
         for step, batch in enumerate(pbar):
-            # image_crops = batch["image_crop"].to(device, non_blocking=True)
-            global_crops = batch["global_crops"].to(device, non_blocking=True)
+            # ---------------- data wait ----------------
+            data_wait_t = time.perf_counter() - end_of_last_iter
 
+            # ---------------- H2D transfer ----------------
+            t0 = sync_time(device)
+            global_crops = batch["global_crops"].to(device, non_blocking=True)
             local_crops = batch["local_crops"]
             if local_crops is not None:
                 local_crops = local_crops.to(device, non_blocking=True)
-            
+            t1 = sync_time(device)
+            h2d_t = t1 - t0
+
+            # ---------------- forward + loss ----------------
             opt.zero_grad(set_to_none=True)
-
+            t0 = sync_time(device)
             with autocast("cuda", dtype=amp_dtype):
-                # Keep only forward + loss in autocast:
                 emb, proj = model(global_crops, local_crops)
-                loss, sim, sigreg = compute_lejepa_loss(proj = proj, sigreg_fn = sigreg_fn, lambd = cfg.lambd, num_global_views = cfg.Vg)
+                loss, sim, sigreg = compute_lejepa_loss(
+                    proj=proj,
+                    sigreg_fn=sigreg_fn,
+                    lambd=cfg.lambd,
+                    num_global_views=cfg.Vg,
+                )
+            t1 = sync_time(device)
+            forward_loss_t = t1 - t0
 
+            # ---------------- backward ----------------
+            t0 = sync_time(device)
             if scaler.is_enabled():
                 scaler.scale(loss).backward()
+            else:
+                loss.backward()
+            t1 = sync_time(device)
+            backward_t = t1 - t0
+
+            # ---------------- optimizer + scheduler ----------------
+            t0 = sync_time(device)
+            if scaler.is_enabled():
                 scaler.step(opt)
                 scaler.update()
             else:
-                loss.backward()
                 opt.step()
-
             scheduler.step()
-            global_step += 1
-            
-            lr = scheduler.get_last_lr()[0]
+            t1 = sync_time(device)
+            optim_sched_t = t1 - t0
 
-            if global_step % cfg.log_every == 0:
-                loss_mean = ddp_mean(loss, world_size)
-                sim_mean = ddp_mean(sim, world_size)
-                sigreg_mean = ddp_mean(sigreg, world_size)
-                
+            global_step += 1
+
+            # ---------------- metric sync / logging ----------------
+            t0 = time.perf_counter()
+            if (not cfg.profile_enabled) and (global_step % cfg.log_every == 0):
+                loss_mean = ddp_mean(loss.detach(), world_size)
+                sim_mean = ddp_mean(sim.detach(), world_size)
+                sigreg_mean = ddp_mean(sigreg.detach(), world_size)
+
                 if is_main_process(rank):
-                    # print(f"loss = {loss_mean.item():.4f}, sim = {sim_mean.item():.4f}, sigreg = {sigreg_mean.item():.4f}, lr = {lr:.2e}")
+                    lr = scheduler.get_last_lr()[0]
                     pbar.set_postfix(
                         loss=f"{loss_mean.item():.4f}",
                         sim=f"{sim_mean.item():.4f}",
@@ -388,8 +476,26 @@ def main():
                             },
                             step=global_step,
                         )
+            metric_log_t = time.perf_counter() - t0
 
-            if global_step % cfg.ckpt_every == 0:
+            # ---------------- record profile ----------------
+            if cfg.profile_enabled:
+                if cfg.profile_warmup_steps <= step < cfg.profile_warmup_steps + cfg.profile_steps:
+                    profile_stats["data_wait"].append(data_wait_t)
+                    profile_stats["h2d"].append(h2d_t)
+                    profile_stats["forward_loss"].append(forward_loss_t)
+                    profile_stats["backward"].append(backward_t)
+                    profile_stats["optim_sched"].append(optim_sched_t)
+                    profile_stats["metric_log"].append(metric_log_t)
+                    profile_stats["step_total"].append(
+                        data_wait_t + h2d_t + forward_loss_t + backward_t + optim_sched_t + metric_log_t
+                    )
+
+                if step >= cfg.profile_warmup_steps + cfg.profile_steps:
+                    profile_done = True
+                    break
+
+            if (not cfg.profile_enabled) and is_main_process(rank) and (global_step % cfg.ckpt_every == 0):
                 save_checkpoint(
                     cfg=cfg,
                     model=model,
@@ -403,10 +509,15 @@ def main():
 
             if global_step >= cfg.total_steps:
                 break
-    
+
+            end_of_last_iter = time.perf_counter()
+
         dist.barrier()
-        
-        if is_main_process(rank):
+
+        if cfg.profile_enabled and profile_done:
+            break
+
+        if (not cfg.profile_enabled) and is_main_process(rank):
             save_checkpoint(
                 cfg=cfg,
                 model=model,
@@ -417,13 +528,47 @@ def main():
                 global_step=global_step,
                 path=os.path.join(cfg.save_dir, "last.pt"),
             )
+
         if global_step >= cfg.total_steps:
             break
-    
+
+    if cfg.profile_enabled:
+        local_summary = {}
+        for k, vals in profile_stats.items():
+            local_summary[k] = sum(vals) / max(1, len(vals))
+
+        dist.barrier()
+
+        summaries = {}
+        for k, v in local_summary.items():
+            mean_v, max_v = ddp_mean_max(v, device)
+            summaries[k] = {"mean": mean_v, "max": max_v}
+
+        if is_main_process(rank):
+            print("\n=== PROFILE SUMMARY (seconds / step) ===")
+            for k, stats in summaries.items():
+                print(f"{k:15s} mean={stats['mean']:.4f}  max={stats['max']:.4f}")
+
+            total = summaries["step_total"]["mean"]
+            if total > 0:
+                print("\n=== PROFILE BREAKDOWN (%) ===")
+                for k in ["data_wait", "h2d", "forward_loss", "backward", "optim_sched", "metric_log"]:
+                    pct = 100.0 * summaries[k]["mean"] / total
+                    print(f"{k:15s} {pct:6.2f}%")
+
+                global_samples_per_step = cfg.bs * world_size
+                global_crops_per_step = global_samples_per_step * (cfg.Vg + cfg.Vl)
+                print("\n=== THROUGHPUT ESTIMATES ===")
+                print(f"global_samples_per_step: {global_samples_per_step}")
+                print(f"global_crops_per_step:   {global_crops_per_step}")
+                print(f"samples/sec:             {global_samples_per_step / total:.2f}")
+                print(f"crops/sec:               {global_crops_per_step / total:.2f}")
+
     if is_main_process(rank) and wandb_run is not None:
         wandb.finish()
 
     dist.destroy_process_group()
+
 
 if __name__ == "__main__":
     main()
