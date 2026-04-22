@@ -12,13 +12,9 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 
 from data.dataloaders import MyDataset
-from models.resnet9 import MLP #Resnet9, 
+from models.resnet9 import Resnet9, MLP
 
-import lejepa
-
-import timm
-
-from configs.config import TrainConfig
+from configs.train_resnet9 import TrainConfig
 
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -27,7 +23,7 @@ from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 import wandb
 
 
-######################################################### fast paths #########################################################
+######################################################### ConvNet specific fast paths #########################################################
 torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.set_float32_matmul_precision("high")
@@ -75,40 +71,27 @@ def build_val_loader(cfg, world_size, rank):
 
 
 ######################################################### Model = Backbone + Projector #########################################################
-class TimmEncoder(nn.Module):
-    def __init__(self, model_name: str, proj_dim: int, pretrained: bool = False):
+class Resnet9Encoder(nn.Module):
+    def __init__(self, proj_dim=128):
         super().__init__()
 
-        self.model_name = model_name
-        self.backbone = timm.create_model(
-            model_name,
-            pretrained=pretrained,
-            num_classes=0,   # remove classifier, return pooled embedding
-            dynamic_img_size=True,
-            dynamic_img_pad=True,
-        )
-
-        embed_dim = getattr(self.backbone, "num_features", None)
-        if embed_dim is None:
-            raise ValueError(f"Could not infer num_features for {model_name}")
-
-        self.embed_dim = embed_dim
+        self.backbone = Resnet9(num_classes=1, num_channels=3)
         self.proj = MLP(
-            in_channels=embed_dim,
-            hidden_channels=[2 * embed_dim, 2 * embed_dim, proj_dim],
+            in_channels=1024,
+            hidden_channels=[2048, 2048, proj_dim],
             norm_layer="batch_norm",
         )
 
     def _encode_views(self, x):
+        # x: [B, V, C, H, W]
         B, V = x.shape[:2]
-        flat = x.flatten(0, 1)            # [B*V, C, H, W]
-        flat_emb = self.backbone(flat)    # [B*V, D]
-        flat_proj = self.proj(flat_emb)   # [B*V, P]
+        flat = x.flatten(0, 1)                        # [B*V, C, H, W]
+        flat_emb = self.backbone(flat)                # [B*V, 1024]
+        flat_proj = self.proj(flat_emb)               # [B*V, P]
 
-        emb = flat_emb.reshape(B, V, -1).transpose(0, 1)
-        proj = flat_proj.reshape(B, V, -1).transpose(0, 1)
+        emb = flat_emb.reshape(B, V, -1).transpose(0, 1)    # [V, B, 1024]
+        proj = flat_proj.reshape(B, V, -1).transpose(0, 1)  # [V, B, P]
         return emb, proj
-
 
     def forward(self, global_x, local_x=None):
         global_emb, global_proj = self._encode_views(global_x)
@@ -118,29 +101,31 @@ class TimmEncoder(nn.Module):
 
         local_emb, local_proj = self._encode_views(local_x)
 
-        emb = torch.cat([global_emb, local_emb], dim=0)
-        proj = torch.cat([global_proj, local_proj], dim=0)
+        emb = torch.cat([global_emb, local_emb], dim=0)     # globals first
+        proj = torch.cat([global_proj, local_proj], dim=0)  # globals first
         return emb, proj
-    
-        
-def init_projector_weights(m):                      #Kaiming weight initialization - Only for the projector, the model initialization is backbone dependent, which is handled by timm
-    if isinstance(m, nn.Linear):
+
+
+def init_weights(m):                      #Kaiming weight initialization
+    if isinstance(m, nn.Conv2d):
+        nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+
+    elif isinstance(m, nn.Linear):
         nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
         if m.bias is not None:
             nn.init.zeros_(m.bias)
-    elif isinstance(m, nn.BatchNorm1d):
+
+    elif isinstance(m, (nn.BatchNorm2d, nn.BatchNorm1d)):
         if m.weight is not None:
             nn.init.ones_(m.weight)
         if m.bias is not None:
             nn.init.zeros_(m.bias)
 
 def build_model(cfg, device, local_rank):
-    model = TimmEncoder(
-        model_name=cfg.model_name,
-        proj_dim=cfg.proj_dim,
-        pretrained=cfg.pretrained_backbone,
-    )
-    model.proj.apply(init_projector_weights)  #model linear layers auto by timm, only help for MLP projector (CUSTOM WRITTEN)
+    model = Resnet9Encoder(proj_dim=cfg.proj_dim)
+    model.apply(init_weights)
     model = model.to(device)
     model = DDP(model, 
                 device_ids=[local_rank], 
@@ -152,15 +137,35 @@ def build_model(cfg, device, local_rank):
     return model
 
 ######################################################### Custom LEJEPA Loss + Training requirements #########################################################
-def build_sigreg(cfg, device):
-    univariate_test = lejepa.univariate.EppsPulley(
-        n_points=cfg.sigreg_num_points
-    )
-    sigreg_fn = lejepa.multivariate.SlicingUnivariateTest(
-        univariate_test=univariate_test,
-        num_slices=cfg.sigreg_num_slices,
-    )
-    return sigreg_fn.to(device)
+class SIGReg(nn.Module):
+    def __init__(self, knots=17, num_slices=256):
+        super().__init__()
+        self.num_slices = num_slices
+
+        t = torch.linspace(0, 3, knots, dtype=torch.float32)
+        dt = 3 / (knots - 1)
+        weights = torch.full((knots,), 2 * dt, dtype=torch.float32)
+        weights[[0, -1]] = dt
+        window = torch.exp(-t.square() / 2.0)
+
+        self.register_buffer("t", t)
+        self.register_buffer("phi", window)
+        self.register_buffer("weights", weights * window)
+
+    def forward(self, z):
+        # z: [B, P]
+        device = z.device
+        P = z.size(-1)
+
+        A = torch.randn(P, self.num_slices, device=device)
+        A = A / A.norm(p=2, dim=0, keepdim=True)
+
+        x_t = (z @ A).unsqueeze(-1) * self.t
+        err = (x_t.cos().mean(-2) - self.phi).square() + x_t.sin().mean(-2).square()
+
+        statistic = (err @ self.weights) * z.size(0)
+        return statistic.mean()
+
 
 def compute_lejepa_loss(proj, sigreg_fn, lambd, num_global_views):
     # proj: [V, B, P]
@@ -215,10 +220,6 @@ def build_amp(cfg):
     return amp_dtype, scaler
 
 ######################################################### Checkpoint loading + saving #########################################################
-def count_parameters(module):
-    total = sum(p.numel() for p in module.parameters())
-    trainable = sum(p.numel() for p in module.parameters() if p.requires_grad)
-    return total, trainable
 
 def save_checkpoint(cfg, model, optimizer, scheduler, scaler, epoch, global_step, path):
     ckpt = {
@@ -298,21 +299,11 @@ def main():
     cfg = TrainConfig()
 
     train_ds, train_loader = build_train_loader(cfg, world_size, rank)
-    # val_ds, val_loader = build_val_loader(cfg, world_size, rank)
+    val_ds, val_loader = build_val_loader(cfg, world_size, rank)
 
     model = build_model(cfg, device, local_rank)
-    raw_model = model.module if isinstance(model, DDP) else model
 
-    backbone_total, backbone_trainable = count_parameters(raw_model.backbone)
-    proj_total, proj_trainable = count_parameters(raw_model.proj)
-    model_total, model_trainable = count_parameters(raw_model)
-
-    if is_main_process(rank):
-        print(f"backbone params: {backbone_total:,}")
-        print(f"projector params: {proj_total:,}")
-        print(f"total params: {model_total:,}")
-
-    sigreg_fn = build_sigreg(cfg, device)
+    sigreg_fn = SIGReg().to(device)
 
     opt, scheduler = build_optimizer_and_scheduler(cfg, model)
     amp_dtype, scaler = build_amp(cfg)
@@ -321,19 +312,7 @@ def main():
 
     wandb_run = setup_wandb(cfg, rank)
     # print(f"Config: {cfg}")
-    if wandb_run is not None:
-        wandb.config.update({
-            "model_name": cfg.model_name,
-            "backbone_num_params": backbone_total,
-            "backbone_num_params_m": backbone_total / 1e6,
-            "projector_num_params": proj_total,
-            "projector_num_params_m": proj_total / 1e6,
-            "model_num_params": model_total,
-            "model_num_params_m": model_total / 1e6,
-            "trainable_num_params": model_trainable,
-            "trainable_num_params_m": model_trainable / 1e6,
-        }, allow_val_change=True)
-    
+
     start_epoch = 0
     global_step = 0
 
@@ -382,38 +361,18 @@ def main():
             global_step += 1
             
             lr = scheduler.get_last_lr()[0]
-            
-            def feature_std_stats(x):
-                # x: [V, B, D]
-                x_flat = x.transpose(0, 1).reshape(-1, x.size(-1))   # [B*V, D]
-                std_per_dim = x_flat.std(dim=0)
-                mean_std = std_per_dim.mean()
-                min_std = std_per_dim.min()
-                max_std = std_per_dim.max()
-                return mean_std, min_std, max_std
 
             if global_step % cfg.log_every == 0:
-                with torch.no_grad():
-                    emb_mean_std, emb_min_std, emb_max_std = feature_std_stats(emb.detach())
-                    proj_mean_std, proj_min_std, proj_max_std = feature_std_stats(proj.detach())
+                loss_mean = ddp_mean(loss, world_size)
+                sim_mean = ddp_mean(sim, world_size)
+                sigreg_mean = ddp_mean(sigreg, world_size)
                 
-                loss_mean = ddp_mean(loss.detach(), world_size)
-                sim_mean = ddp_mean(sim.detach(), world_size)
-                sigreg_mean = ddp_mean(sigreg.detach(), world_size)
-                
-                emb_mean_std_mean = ddp_mean(emb_mean_std.detach(), world_size)
-                emb_min_std_mean = ddp_mean(emb_min_std.detach(), world_size)
-                proj_mean_std_mean = ddp_mean(proj_mean_std.detach(), world_size)
-                proj_min_std_mean = ddp_mean(proj_min_std.detach(), world_size)
-
                 if is_main_process(rank):
                     # print(f"loss = {loss_mean.item():.4f}, sim = {sim_mean.item():.4f}, sigreg = {sigreg_mean.item():.4f}, lr = {lr:.2e}")
                     pbar.set_postfix(
                         loss=f"{loss_mean.item():.4f}",
                         sim=f"{sim_mean.item():.4f}",
                         sigreg=f"{sigreg_mean.item():.4f}",
-                        emb_std=f"{emb_mean_std_mean.item():.4f}",
-                        proj_std=f"{proj_mean_std_mean.item():.4f}",
                         lr=f"{lr:.2e}",
                     )
 
@@ -423,10 +382,6 @@ def main():
                                 "train/loss": loss_mean.item(),
                                 "train/sim": sim_mean.item(),
                                 "train/sigreg": sigreg_mean.item(),
-                                "train/emb_mean_std": emb_mean_std_mean.item(),
-                                "train/emb_min_std": emb_min_std_mean.item(),
-                                "train/proj_mean_std": proj_mean_std_mean.item(),
-                                "train/proj_min_std": proj_min_std_mean.item(),
                                 "train/lr": lr,
                                 "train/epoch": epoch,
                                 "train/step": global_step,
@@ -460,23 +415,12 @@ def main():
                 scaler=scaler,
                 epoch=epoch + 1,
                 global_step=global_step,
-                path=os.path.join(cfg.save_dir, f"last_epoch_{epoch}.pt"),
+                path=os.path.join(cfg.save_dir, "last.pt"),
             )
         if global_step >= cfg.total_steps:
             break
     
     if is_main_process(rank) and wandb_run is not None:
-        if is_main_process(rank):
-            save_checkpoint(
-                cfg=cfg,
-                model=model,
-                optimizer=opt,
-                scheduler=scheduler,
-                scaler=scaler,
-                epoch=epoch + 1,
-                global_step=global_step,
-                path=os.path.join(cfg.save_dir, f"complete.pt"),
-            )
         wandb.finish()
 
     dist.destroy_process_group()

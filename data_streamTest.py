@@ -114,13 +114,13 @@ def main():
     parser.add_argument("--dataset", type=str, default="Smith42/galaxies")
     parser.add_argument("--columns", nargs="+", default=["image_crop", "galaxy_size"])
     parser.add_argument("--shuffle", action="store_true")
-    parser.add_argument("--world-size", type=int, default=1)
+    parser.add_argument("--world-size", type=int, default=4)
     parser.add_argument("--rank", type=int, default=0)
     parser.add_argument("--Vg", type=int, default=2)
-    parser.add_argument("--Vl", type=int, default=0)
+    parser.add_argument("--Vl", type=int, default=8)
 
     parser.add_argument("--batch-size", type=int, default=96)
-    parser.add_argument("--num-workers", type=int, default=16)
+    parser.add_argument("--num-workers", type=int, default=4)
 
     parser.add_argument("--sample-warmup", type=int, default=10)
     parser.add_argument("--sample-steps", type=int, default=50)

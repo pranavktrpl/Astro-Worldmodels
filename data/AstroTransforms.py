@@ -168,7 +168,7 @@ class AstroMultiCropTransform():
 
         self.global_geom = v2.Compose([
             v2.RandomResizedCrop(
-                size=144,
+                size=140,
                 scale=(0.947, 0.947),
                 ratio=(1.0, 1.0),
                 interpolation=InterpolationMode.BILINEAR,
@@ -185,7 +185,7 @@ class AstroMultiCropTransform():
 
         self.local_geom = v2.Compose([
             v2.RandomResizedCrop(
-                size=60,
+                size=56,
                 scale=(0.394, 0.394),
                 ratio=(1.0, 1.0),
                 interpolation=InterpolationMode.BILINEAR,
@@ -202,17 +202,17 @@ class AstroMultiCropTransform():
 
         self.global1_extra = v2.Compose([
             RandomAstroGaussianBlur(p=1.0),
-            RandomAstroGaussianNoise(p=1.0, im_dim=144),
+            RandomAstroGaussianNoise(p=1.0, im_dim=140),
         ])
 
         self.global2_extra = v2.Compose([
             RandomAstroGaussianBlur(p=0.1),
-            RandomAstroGaussianNoise(p=0.1, im_dim=144),
+            RandomAstroGaussianNoise(p=0.1, im_dim=140),
         ])
 
         self.local_extra = v2.Compose([
             RandomAstroGaussianBlur(p=0.5),
-            RandomAstroGaussianNoise(p=0.5, im_dim=60),
+            RandomAstroGaussianNoise(p=0.5, im_dim=56),
         ])
 
         self.to_tensor = v2.Compose([
