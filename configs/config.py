@@ -43,8 +43,8 @@ class TrainConfig:
     # logging / checkpointing
     entity: str = "pranavktrpl-personal"
     project: str = "astrojepa"
-    run_name: str = "vit_small_patch14_FirstTrain_2104"
+    run_name: str = "vit_small_patch14_FixedTrain_2204"
     log_every: int = 10
-    ckpt_every: int = 10000  #Train size = 8Mill, 96 bs, 4 GPUs, 22k steps per epoch, save every 10k steps, ~2 ckpts per epoch
-    save_dir: str = "./checkpoints/FirstTrain_VitSmallPatch14_2104"
+    ckpt_every: int = 1000  #Train size = 8Mill, 96 bs, 4 GPUs, 22k steps per epoch, save every 10k steps, ~2 ckpts per epoch
+    save_dir: str = "./checkpoints/VitSmallPatch14_2204"
     resume_path: str | None = None

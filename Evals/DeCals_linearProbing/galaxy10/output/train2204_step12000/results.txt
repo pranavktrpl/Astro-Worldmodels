@@ -1,0 +1,93 @@
+(lejepa-og) root@universetbd-0:/mnt/ssd-cluster/pranav/Astro-Worldmodels# python Evals/DeCals_linearProbing/galaxy10/linear_probe_galaxy10.py --ckpt-path checkpoints/VitSmallPatch14_2204/step_12000.pt --galaxy10-h5 Evals/DeCals_linearProbing/galaxy10/Galaxy10_DECals.h5 --out-dir Evals/DeCals_linearProbing/galaxy10/output/train2204
+Loaded checkpoint: checkpoints/VitSmallPatch14_2204/step_12000.pt
+Using model_name   : vit_small_patch14_dinov2.lvd142m
+Using input_size   : 518
+Dataset size       : 17736
+Split sizes        : train=14185, val=1769, test=1782
+Extracting train embeddings...
+Extracting val embeddings...
+Extracting test embeddings...
+Embedding dim      : 384
+
+===== TRAIN =====
+top1_acc  : 0.4986
+macro_f1  : 0.4492
+per_class_acc:
+   0 disturbed                    acc=0.2373  n=864
+   1 merging                      acc=0.3603  n=1482
+   2 round_smooth                 acc=0.6607  n=2116
+   3 in_between_round_smooth      acc=0.5176  n=1621
+   4 cigar_shaped_smooth          acc=0.0337  n=267
+   5 barred_spiral                acc=0.3917  n=1634
+   6 unbarred_tight_spiral        acc=0.4887  n=1463
+   7 unbarred_loose_spiral        acc=0.4648  n=2102
+   8 edge_on_without_bulge        acc=0.6520  n=1138
+   9 edge_on_with_bulge           acc=0.6762  n=1498
+confusion_matrix:
+[[ 205   31  189  131    0   47   25  154   42   40]
+ [  25  534  315  129    2  104   16  142   94  121]
+ [  23  139 1398  295    1   71   33   87    6   63]
+ [  11   90  505  839    3   20    9   69    9   66]
+ [   5    8   57  109    9    3    1   19    3   53]
+ [  54   59  163   96    4  640  204  332   51   31]
+ [  14   17   64   21    1  199  715  347   72   13]
+ [ 135   72  172  145    2  182  259  977  118   40]
+ [  74   23   32    5    3    5   15  118  742  121]
+ [   9   88  181   73    5   23    4   33   69 1013]]
+
+===== VAL =====
+top1_acc  : 0.4929
+macro_f1  : 0.4471
+per_class_acc:
+   0 disturbed                    acc=0.2685  n=108
+   1 merging                      acc=0.3514  n=185
+   2 round_smooth                 acc=0.6591  n=264
+   3 in_between_round_smooth      acc=0.4851  n=202
+   4 cigar_shaped_smooth          acc=0.0606  n=33
+   5 barred_spiral                acc=0.3824  n=204
+   6 unbarred_tight_spiral        acc=0.5055  n=182
+   7 unbarred_loose_spiral        acc=0.4847  n=262
+   8 edge_on_without_bulge        acc=0.5141  n=142
+   9 edge_on_with_bulge           acc=0.7166  n=187
+confusion_matrix:
+[[ 29   5  20  12   0   8   3  21   5   5]
+ [  2  65  46  14   0  10   2  18  13  15]
+ [  3  19 174  34   0   9   1  10   1  13]
+ [  3  17  65  98   1   2   2   5   0   9]
+ [  0   1   7  13   2   0   0   2   2   6]
+ [  7  10  17  12   0  78  26  43   7   4]
+ [  1   8   6   3   0  20  92  40  11   1]
+ [ 24  14  17  23   1  16  28 127   9   3]
+ [ 11   7   8   0   0   0   3  19  73  21]
+ [  0   8  22  10   0   3   0   5   5 134]]
+
+===== TEST =====
+top1_acc  : 0.4703
+macro_f1  : 0.4179
+per_class_acc:
+   0 disturbed                    acc=0.2477  n=109
+   1 merging                      acc=0.3226  n=186
+   2 round_smooth                 acc=0.6717  n=265
+   3 in_between_round_smooth      acc=0.5049  n=204
+   4 cigar_shaped_smooth          acc=0.0000  n=34
+   5 barred_spiral                acc=0.2878  n=205
+   6 unbarred_tight_spiral        acc=0.3913  n=184
+   7 unbarred_loose_spiral        acc=0.4356  n=264
+   8 edge_on_without_bulge        acc=0.6294  n=143
+   9 edge_on_with_bulge           acc=0.7128  n=188
+confusion_matrix:
+[[ 27   4  24  14   0   7   3  17   9   4]
+ [  3  60  49  14   1  13   3  18  11  14]
+ [  0  20 178  28   1  13   4  12   0   9]
+ [  1  11  60 103   1   3   1  13   0  11]
+ [  0   0   9  14   0   1   0   1   1   8]
+ [  4  17  21  10   0  59  28  57   3   6]
+ [  5   5   9   1   1  36  72  45   7   3]
+ [ 19   8  23  21   1  28  23 115  19   7]
+ [  6   2   5   1   0   0   2  19  90  18]
+ [  1   7  28  11   0   3   0   1   3 134]]
+
+Saved metrics to          : Evals/DeCals_linearProbing/galaxy10/output/train2204/metrics.json
+Saved test confusion CSV : Evals/DeCals_linearProbing/galaxy10/output/train2204/test_confusion_matrix.csv
+Saved linear probe state : Evals/DeCals_linearProbing/galaxy10/output/train2204/linear_probe.pt
+(lejepa-og) root@universetbd-0:/mnt/ssd-cluster/pranav/Astro-Worldmodels# 

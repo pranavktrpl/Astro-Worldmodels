@@ -1,0 +1,11 @@
+true\pred,disturbed,merging,round_smooth,in_between_round_smooth,cigar_shaped_smooth,barred_spiral,unbarred_tight_spiral,unbarred_loose_spiral,edge_on_without_bulge,edge_on_with_bulge
+disturbed,30,4,18,14,0,8,6,19,5,5
+merging,3,64,36,13,3,9,10,12,10,26
+round_smooth,2,27,162,36,0,7,8,11,1,11
+in_between_round_smooth,1,18,46,99,10,4,1,8,1,16
+cigar_shaped_smooth,0,1,6,6,8,0,0,3,3,7
+barred_spiral,5,18,11,10,0,56,53,43,2,7
+unbarred_tight_spiral,1,6,10,0,0,19,109,25,8,6
+unbarred_loose_spiral,14,11,16,14,2,34,37,111,14,11
+edge_on_without_bulge,5,4,3,0,1,0,9,12,87,22
+edge_on_with_bulge,0,7,13,11,1,2,0,5,7,142

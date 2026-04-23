@@ -235,6 +235,20 @@ def save_checkpoint(cfg, model, optimizer, scheduler, scaler, epoch, global_step
     }
     torch.save(ckpt, path)
 
+# def save_checkpoint_atomic(cfg, model, optimizer, scheduler, scaler, epoch, global_step, path):
+#     tmp_path = path + ".tmp"
+#     save_checkpoint(
+#         cfg=cfg,
+#         model=model,
+#         optimizer=optimizer,
+#         scheduler=scheduler,
+#         scaler=scaler,
+#         epoch=epoch,
+#         global_step=global_step,
+#         path=tmp_path,
+#     )
+#     os.replace(tmp_path, path)
+
 def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, device="cuda"):
     ckpt = torch.load(path, map_location=device)
 
@@ -435,16 +449,19 @@ def main():
                         )
 
             if global_step % cfg.ckpt_every == 0:
-                save_checkpoint(
-                    cfg=cfg,
-                    model=model,
-                    optimizer=opt,
-                    scheduler=scheduler,
-                    scaler=scaler,
-                    epoch=epoch,
-                    global_step=global_step,
-                    path=os.path.join(cfg.save_dir, f"step_{global_step}.pt"),
-                )
+                dist.barrier()
+                if is_main_process(rank):
+                    save_checkpoint(
+                        cfg=cfg,
+                        model=model,
+                        optimizer=opt,
+                        scheduler=scheduler,
+                        scaler=scaler,
+                        epoch=epoch,
+                        global_step=global_step,
+                        path=os.path.join(cfg.save_dir, f"step_{global_step}.pt"),
+                    )
+                dist.barrier()
 
             if global_step >= cfg.total_steps:
                 break
@@ -465,7 +482,7 @@ def main():
         if global_step >= cfg.total_steps:
             break
     
-    if is_main_process(rank) and wandb_run is not None:
+    if is_main_process(rank):
         if is_main_process(rank):
             save_checkpoint(
                 cfg=cfg,
@@ -477,6 +494,8 @@ def main():
                 global_step=global_step,
                 path=os.path.join(cfg.save_dir, f"complete.pt"),
             )
+    
+    if wandb_run is not None:
         wandb.finish()
 
     dist.destroy_process_group()

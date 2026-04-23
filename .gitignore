@@ -2,6 +2,10 @@
 .wandb-apiKey
 /checkpoints
 .env
+
+#model checkpoints
+*.pt
+*.h5
 # Python cache
 __pycache__/
 *.pyc
