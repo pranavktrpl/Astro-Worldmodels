@@ -35,7 +35,7 @@ class TrainConfig:
 
     # runtime
     epochs: int = 1
-    total_steps: int = 100000000   #100 M total stop condition, that's more than 12 epochs
+    total_steps: int = 50000   #100 M total stop condition, that's more than 12 epochs
     train_num_images: int = 80000000  #80M images
 
     amp_dtype: str = "bf16"    #bf16 or fp16 - picked from https://github.com/galilai-group/lejepa/blob/main/README.md
@@ -43,8 +43,8 @@ class TrainConfig:
     # logging / checkpointing
     entity: str = "pranavktrpl-personal"
     project: str = "astrojepa"
-    run_name: str = "vit_small_patch14_FixedTrain_2204"
+    run_name: str = "VitSmallPatch14_DEBUG_Crashing"
     log_every: int = 10
-    ckpt_every: int = 1000  #Train size = 8Mill, 96 bs, 4 GPUs, 22k steps per epoch, save every 10k steps, ~2 ckpts per epoch
-    save_dir: str = "./checkpoints/VitSmallPatch14_2204"
+    ckpt_every: int = 5000  #Train size = 8Mill, 96 bs, 4 GPUs, 22k steps per epoch, save every 10k steps, ~2 ckpts per epoch
+    save_dir: str = "./checkpoints/VitSmallPatch14_DEBUG"
     resume_path: str | None = None

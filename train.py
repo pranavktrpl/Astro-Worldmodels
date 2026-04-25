@@ -1,4 +1,7 @@
 import os
+from datetime import timedelta
+import time
+
 import random
 from dotenv import load_dotenv
 
@@ -35,7 +38,10 @@ torch.set_float32_matmul_precision("high")
 
 ######################################################### DDP Setup + Dataloading #########################################################
 def setup_ddp():
-    dist.init_process_group(backend="nccl")
+    dist.init_process_group(
+        backend="nccl",
+        timeout=timedelta(minutes=60),
+    )
 
     world_size = dist.get_world_size()
     rank = dist.get_rank()   #Which process this is globally, so rank is an init in the dataset object we created, cause every GPU gets a custom dataset object
@@ -60,18 +66,18 @@ def build_train_loader(cfg, world_size, rank):
         split="train", dataset=cfg.dataset_name, columns=cfg.columns, shuffle=True, world_size=world_size, rank=rank, Vg=cfg.Vg, Vl=cfg.Vl
     )
     train_loader = DataLoader(
-        train_ds, batch_size=cfg.bs, num_workers=cfg.num_workers, pin_memory=True, persistent_workers=(cfg.num_workers > 0),     #Currently yields {"image_crop": [Vg, 3, H, W]}
+        train_ds, batch_size=cfg.bs, num_workers=cfg.num_workers, pin_memory=True, persistent_workers=(cfg.num_workers > 0), timeout=600 if cfg.num_workers > 0 else 0     #Currently yields {"image_crop": [Vg, 3, H, W]}
     ) 
     return train_ds, train_loader
 
-def build_val_loader(cfg, world_size, rank):
-    val_ds = MyDataset(
-        split="validation", dataset=cfg.dataset_name, columns=cfg.columns, shuffle=False, world_size=1, rank=0, Vg=cfg.Vg, Vl=cfg.Vl
-    )
-    val_loader = DataLoader(
-        val_ds, batch_size=cfg.eval_bs, num_workers=cfg.num_workers, pin_memory=True, persistent_workers=(cfg.num_workers > 0),
-    )
-    return val_ds, val_loader
+# def build_val_loader(cfg, world_size, rank):
+#     val_ds = MyDataset(
+#         split="validation", dataset=cfg.dataset_name, columns=cfg.columns, shuffle=False, world_size=1, rank=0, Vg=cfg.Vg, Vl=cfg.Vl
+#     )
+#     val_loader = DataLoader(
+#         val_ds, batch_size=cfg.eval_bs, num_workers=cfg.num_workers, pin_memory=True, persistent_workers=(cfg.num_workers > 0),
+#     )
+#     return val_ds, val_loader
 
 
 ######################################################### Model = Backbone + Projector #########################################################
@@ -214,7 +220,7 @@ def build_amp(cfg):
 
     return amp_dtype, scaler
 
-######################################################### Checkpoint loading + saving #########################################################
+######################################################### Checkpoint loading + saving + other utilities ##########################################################
 def count_parameters(module):
     total = sum(p.numel() for p in module.parameters())
     trainable = sum(p.numel() for p in module.parameters() if p.requires_grad)
@@ -299,6 +305,22 @@ def ddp_mean(x, world_size):
     y /= world_size
     return y
 
+def rank_heartbeat(cfg, rank, step, tag):
+    debug_dir = os.path.join(cfg.save_dir, "debug_logs")
+    log_path = os.path.join(debug_dir, f"rank_{rank}.txt")
+    with open(log_path, "a") as f:
+        f.write(f"[rank {rank}] step={step} {tag} t={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.flush()
+
+def feature_std_stats(x):   #Only to monitor collapse of embeddings and projections
+    # x: [V, B, D]
+    x_flat = x.transpose(0, 1).reshape(-1, x.size(-1))   # [B*V, D]
+    std_per_dim = x_flat.std(dim=0)
+    mean_std = std_per_dim.mean()
+    min_std = std_per_dim.min()
+    max_std = std_per_dim.max()
+    return mean_std, min_std, max_std
+
 ######################################################### Main training loop #########################################################
 
 def main():
@@ -310,7 +332,11 @@ def main():
 
     # temporary config placeholder
     cfg = TrainConfig()
+    heartbeat_every = 100 #500 steps
+    debug_dir = os.path.join(cfg.save_dir, "debug_logs")
+    os.makedirs(debug_dir, exist_ok=True)
 
+    
     train_ds, train_loader = build_train_loader(cfg, world_size, rank)
     # val_ds, val_loader = build_val_loader(cfg, world_size, rank)
 
@@ -370,12 +396,17 @@ def main():
         pbar = tqdm(train_loader, disable=not is_main_process(rank), desc=f"epoch {epoch}")
 
         for step, batch in enumerate(pbar):
+            step_id = global_step + 1
+            if step_id % heartbeat_every == 0:
+                rank_heartbeat(cfg, rank, step_id, "batch_fetched")
             # image_crops = batch["image_crop"].to(device, non_blocking=True)
             global_crops = batch["global_crops"].to(device, non_blocking=True)
 
             local_crops = batch["local_crops"]
             if local_crops is not None:
                 local_crops = local_crops.to(device, non_blocking=True)
+            if step_id % heartbeat_every == 0:
+                rank_heartbeat(cfg, rank, step_id, "h2d_done")
             
             opt.zero_grad(set_to_none=True)
 
@@ -383,29 +414,29 @@ def main():
                 # Keep only forward + loss in autocast:
                 emb, proj = model(global_crops, local_crops)
                 loss, sim, sigreg = compute_lejepa_loss(proj = proj, sigreg_fn = sigreg_fn, lambd = cfg.lambd, num_global_views = cfg.Vg)
+            if step_id % heartbeat_every == 0:
+                rank_heartbeat(cfg, rank, step_id, "forward_loss_done")
 
             if scaler.is_enabled():
                 scaler.scale(loss).backward()
+                if step_id % heartbeat_every == 0:
+                    rank_heartbeat(cfg, rank, step_id, "backward_done")
                 scaler.step(opt)
                 scaler.update()
             else:
                 loss.backward()
+                if step_id % heartbeat_every == 0:
+                    rank_heartbeat(cfg, rank, step_id, "backward_done")
                 opt.step()
+            
 
             scheduler.step()
             global_step += 1
+            if step_id % heartbeat_every == 0:
+                rank_heartbeat(cfg, rank, step_id, "optim_done")
             
             lr = scheduler.get_last_lr()[0]
             
-            def feature_std_stats(x):
-                # x: [V, B, D]
-                x_flat = x.transpose(0, 1).reshape(-1, x.size(-1))   # [B*V, D]
-                std_per_dim = x_flat.std(dim=0)
-                mean_std = std_per_dim.mean()
-                min_std = std_per_dim.min()
-                max_std = std_per_dim.max()
-                return mean_std, min_std, max_std
-
             if global_step % cfg.log_every == 0:
                 with torch.no_grad():
                     emb_mean_std, emb_min_std, emb_max_std = feature_std_stats(emb.detach())
