@@ -66,7 +66,7 @@ def build_train_loader(cfg, world_size, rank):
         split="train", dataset=cfg.dataset_name, columns=cfg.columns, shuffle=True, world_size=world_size, rank=rank, Vg=cfg.Vg, Vl=cfg.Vl
     )
     train_loader = DataLoader(
-        train_ds, batch_size=cfg.bs, num_workers=cfg.num_workers, pin_memory=True, persistent_workers=(cfg.num_workers > 0), timeout=600 if cfg.num_workers > 0 else 0     #Currently yields {"image_crop": [Vg, 3, H, W]}
+        train_ds, batch_size=cfg.bs, num_workers=cfg.num_workers, pin_memory=True, persistent_workers=(cfg.num_workers > 0), timeout=600 if cfg.num_workers > 0 else 0, drop_last=True     #Currently yields {"image_crop": [Vg, 3, H, W]}
     ) 
     return train_ds, train_loader
 
@@ -255,8 +255,14 @@ def save_checkpoint(cfg, model, optimizer, scheduler, scaler, epoch, global_step
 #     )
 #     os.replace(tmp_path, path)
 
+def optimizer_to(optimizer, device):
+    for state in optimizer.state.values():
+        for k, v in state.items():
+            if torch.is_tensor(v):
+                state[k] = v.to(device)
+
 def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, device="cuda"):
-    ckpt = torch.load(path, map_location=device)
+    ckpt = torch.load(path, map_location="cpu")
 
     if isinstance(model, DDP):
         model.module.load_state_dict(ckpt["model"])
@@ -265,6 +271,7 @@ def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, de
 
     if optimizer is not None and ckpt.get("optimizer") is not None:
         optimizer.load_state_dict(ckpt["optimizer"])
+        optimizer_to(optimizer, device)
 
     if scheduler is not None and ckpt.get("scheduler") is not None:
         scheduler.load_state_dict(ckpt["scheduler"])
@@ -275,9 +282,9 @@ def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, de
     if "python_rng" in ckpt:
         random.setstate(ckpt["python_rng"])
     if "torch_rng" in ckpt:
-        torch.set_rng_state(ckpt["torch_rng"])
+        torch.set_rng_state(ckpt["torch_rng"].cpu())
     if "cuda_rng" in ckpt:
-        torch.cuda.set_rng_state_all(ckpt["cuda_rng"])
+        torch.cuda.set_rng_state_all([x.cpu() for x in ckpt["cuda_rng"]])
 
     start_epoch = ckpt.get("epoch", 0)
     global_step = ckpt.get("global_step", 0)
@@ -292,6 +299,8 @@ def setup_wandb(cfg, rank):
         entity=cfg.entity,
         project=cfg.project,
         name=cfg.run_name,
+        id=cfg.wandb_run_id,
+        resume=cfg.wandb_resume if cfg.wandb_run_id is not None else None,
         config=asdict(cfg),
         mode="online",   # change to "offline" if cluster internet is flaky
     )
@@ -304,13 +313,6 @@ def ddp_mean(x, world_size):
     dist.all_reduce(y, op=dist.ReduceOp.SUM)
     y /= world_size
     return y
-
-def rank_heartbeat(cfg, rank, step, tag):
-    debug_dir = os.path.join(cfg.save_dir, "debug_logs")
-    log_path = os.path.join(debug_dir, f"rank_{rank}.txt")
-    with open(log_path, "a") as f:
-        f.write(f"[rank {rank}] step={step} {tag} t={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.flush()
 
 def feature_std_stats(x):   #Only to monitor collapse of embeddings and projections
     # x: [V, B, D]
@@ -332,11 +334,13 @@ def main():
 
     # temporary config placeholder
     cfg = TrainConfig()
-    heartbeat_every = 100 #500 steps
-    debug_dir = os.path.join(cfg.save_dir, "debug_logs")
-    os.makedirs(debug_dir, exist_ok=True)
-
+    cfg.steps_per_epoch = cfg.safe_samples_per_rank_per_epoch // cfg.bs
+    cfg.total_steps = cfg.epochs * cfg.steps_per_epoch
     
+    if is_main_process(rank):
+        print(f"steps_per_epoch = {cfg.steps_per_epoch}")
+        print(f"total_steps = {cfg.total_steps}")
+
     train_ds, train_loader = build_train_loader(cfg, world_size, rank)
     # val_ds, val_loader = build_val_loader(cfg, world_size, rank)
 
@@ -376,6 +380,7 @@ def main():
     
     start_epoch = 0
     global_step = 0
+    # resume_step_in_epoch = 0
 
     if cfg.resume_path is not None:
         start_epoch, global_step = load_checkpoint(
@@ -386,27 +391,25 @@ def main():
             scaler=scaler,
             device=device,
         )
+        # resume_step_in_epoch = global_step % cfg.steps_per_epoch
         if is_main_process(rank):
-            print(f"Resumed from {cfg.resume_path} at epoch={start_epoch}, step={global_step}")
+            print(f"Resumed from {cfg.resume_path} at epoch={start_epoch}, step={global_step}")#, resume_step_in_epoch={resume_step_in_epoch}")
 
     for epoch in range(start_epoch, cfg.epochs):
         train_ds.set_epoch(epoch)
         model.train()
 
         pbar = tqdm(train_loader, disable=not is_main_process(rank), desc=f"epoch {epoch}")
+        # epoch_step_offset = resume_step_in_epoch if epoch == start_epoch else 0
 
         for step, batch in enumerate(pbar):
             step_id = global_step + 1
-            if step_id % heartbeat_every == 0:
-                rank_heartbeat(cfg, rank, step_id, "batch_fetched")
             # image_crops = batch["image_crop"].to(device, non_blocking=True)
             global_crops = batch["global_crops"].to(device, non_blocking=True)
 
             local_crops = batch["local_crops"]
             if local_crops is not None:
                 local_crops = local_crops.to(device, non_blocking=True)
-            if step_id % heartbeat_every == 0:
-                rank_heartbeat(cfg, rank, step_id, "h2d_done")
             
             opt.zero_grad(set_to_none=True)
 
@@ -414,26 +417,18 @@ def main():
                 # Keep only forward + loss in autocast:
                 emb, proj = model(global_crops, local_crops)
                 loss, sim, sigreg = compute_lejepa_loss(proj = proj, sigreg_fn = sigreg_fn, lambd = cfg.lambd, num_global_views = cfg.Vg)
-            if step_id % heartbeat_every == 0:
-                rank_heartbeat(cfg, rank, step_id, "forward_loss_done")
-
+            
             if scaler.is_enabled():
                 scaler.scale(loss).backward()
-                if step_id % heartbeat_every == 0:
-                    rank_heartbeat(cfg, rank, step_id, "backward_done")
                 scaler.step(opt)
                 scaler.update()
             else:
                 loss.backward()
-                if step_id % heartbeat_every == 0:
-                    rank_heartbeat(cfg, rank, step_id, "backward_done")
                 opt.step()
             
 
             scheduler.step()
             global_step += 1
-            if step_id % heartbeat_every == 0:
-                rank_heartbeat(cfg, rank, step_id, "optim_done")
             
             lr = scheduler.get_last_lr()[0]
             
@@ -494,6 +489,9 @@ def main():
                     )
                 dist.barrier()
 
+            if (step + 1) >= cfg.steps_per_epoch:
+                break
+
             if global_step >= cfg.total_steps:
                 break
     
@@ -510,21 +508,22 @@ def main():
                 global_step=global_step,
                 path=os.path.join(cfg.save_dir, f"last_epoch_{epoch}.pt"),
             )
+        dist.barrier()
         if global_step >= cfg.total_steps:
             break
     
     if is_main_process(rank):
-        if is_main_process(rank):
-            save_checkpoint(
-                cfg=cfg,
-                model=model,
-                optimizer=opt,
-                scheduler=scheduler,
-                scaler=scaler,
-                epoch=epoch + 1,
-                global_step=global_step,
-                path=os.path.join(cfg.save_dir, f"complete.pt"),
-            )
+        save_checkpoint(
+            cfg=cfg,
+            model=model,
+            optimizer=opt,
+            scheduler=scheduler,
+            scaler=scaler,
+            epoch=epoch + 1,
+            global_step=global_step,
+            path=os.path.join(cfg.save_dir, f"complete.pt"),
+        )
+    dist.barrier()
     
     if wandb_run is not None:
         wandb.finish()
