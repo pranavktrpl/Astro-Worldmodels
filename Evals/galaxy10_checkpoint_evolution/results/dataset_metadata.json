@@ -1,0 +1,38 @@
+{
+  "checkpoint_count": 40,
+  "class_counts": [
+    1081,
+    1853,
+    2645,
+    2027,
+    334,
+    2043,
+    1829,
+    2628,
+    1423,
+    1873
+  ],
+  "class_names": [
+    "disturbed",
+    "merging",
+    "round_smooth",
+    "in_between_round_smooth",
+    "cigar_shaped_smooth",
+    "barred_spiral",
+    "unbarred_tight_spiral",
+    "unbarred_loose_spiral",
+    "edge_on_without_bulge",
+    "edge_on_with_bulge"
+  ],
+  "galaxy10_h5": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/DeCals_linearProbing/galaxy10/Galaxy10_DECals.h5",
+  "ignored_families": [
+    "FirstTrain_VitSmallPatch14_2104"
+  ],
+  "image_shape": [
+    17736,
+    256,
+    256,
+    3
+  ],
+  "num_examples": 17736
+}

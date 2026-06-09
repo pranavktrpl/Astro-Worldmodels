@@ -1,0 +1,202 @@
+[
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_4000.pt",
+    "step": 4000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_8000.pt",
+    "step": 8000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/last_epoch_0.pt",
+    "step": 10988
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_12000.pt",
+    "step": 12000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_16000.pt",
+    "step": 16000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_20000.pt",
+    "step": 20000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/last_epoch_1.pt",
+    "step": 22988
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_24000.pt",
+    "step": 24000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_28000.pt",
+    "step": 28000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_32000.pt",
+    "step": 32000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/last_epoch_2.pt",
+    "step": 33976
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_36000.pt",
+    "step": 36000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_40000.pt",
+    "step": 40000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_44000.pt",
+    "step": 44000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/last_epoch_3.pt",
+    "step": 44964
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_48000.pt",
+    "step": 48000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_52000.pt",
+    "step": 52000
+  },
+  {
+    "family": "VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/complete.pt",
+    "step": 54940
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_1000.pt",
+    "step": 1000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_2000.pt",
+    "step": 2000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_3000.pt",
+    "step": 3000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_4000.pt",
+    "step": 4000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_5000.pt",
+    "step": 5000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_6000.pt",
+    "step": 6000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_7000.pt",
+    "step": 7000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_8000.pt",
+    "step": 8000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_9000.pt",
+    "step": 9000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_10000.pt",
+    "step": 10000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_11000.pt",
+    "step": 11000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_12000.pt",
+    "step": 12000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_13000.pt",
+    "step": 13000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_14000.pt",
+    "step": 14000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_15000.pt",
+    "step": 15000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_16000.pt",
+    "step": 16000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_17000.pt",
+    "step": 17000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_18000.pt",
+    "step": 18000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_19000.pt",
+    "step": 19000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_20000.pt",
+    "step": 20000
+  },
+  {
+    "family": "VitSmallPatch14_2204",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_21000.pt",
+    "step": 21000
+  },
+  {
+    "family": "checkpoints-test",
+    "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/checkpoints-test/step_8000.pt",
+    "step": 8000
+  }
+]

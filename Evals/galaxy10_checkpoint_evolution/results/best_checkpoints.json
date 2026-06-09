@@ -1,0 +1,131 @@
+{
+  "VitLargePatch14_OfficialTrain5_Epoch5_2504": {
+    "checkpoint": "step_52000.pt",
+    "checkpoint_path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_52000.pt",
+    "global_step": 52000,
+    "model_name": "vit_large_patch14_dinov2.lvd142m",
+    "selection_rule": "highest mean validation macro-F1; validation accuracy tie-break",
+    "test_accuracy": {
+      "mean": 0.7182940443356832,
+      "std": 0.008380034892369208,
+      "values": [
+        0.7244669198989868,
+        0.7087541818618774,
+        0.7216610312461853
+      ]
+    },
+    "test_macro_f1": {
+      "mean": 0.702342172463735,
+      "std": 0.008965722201589074,
+      "values": [
+        0.7126757502555847,
+        0.6966303586959839,
+        0.6977204084396362
+      ]
+    },
+    "validation_accuracy": {
+      "mean": 0.7022800048192342,
+      "std": 0.009396979670189565,
+      "values": [
+        0.7009609937667847,
+        0.6936122179031372,
+        0.7122668027877808
+      ]
+    },
+    "validation_macro_f1": {
+      "mean": 0.6805015405019125,
+      "std": 0.007738440337085082,
+      "values": [
+        0.6742242574691772,
+        0.6781328916549683,
+        0.6891474723815918
+      ]
+    }
+  },
+  "VitSmallPatch14_2204": {
+    "checkpoint": "step_21000.pt",
+    "checkpoint_path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitSmallPatch14_2204/step_21000.pt",
+    "global_step": 21000,
+    "model_name": "vit_small_patch14_dinov2.lvd142m",
+    "selection_rule": "highest mean validation macro-F1; validation accuracy tie-break",
+    "test_accuracy": {
+      "mean": 0.6118593414624532,
+      "std": 0.01421132014402089,
+      "values": [
+        0.6066218018531799,
+        0.6010100841522217,
+        0.627946138381958
+      ]
+    },
+    "test_macro_f1": {
+      "mean": 0.5934201876322428,
+      "std": 0.011579393368274475,
+      "values": [
+        0.5885563492774963,
+        0.585066020488739,
+        0.6066381931304932
+      ]
+    },
+    "validation_accuracy": {
+      "mean": 0.591294527053833,
+      "std": 0.0025904862815714588,
+      "values": [
+        0.5918598175048828,
+        0.5935556888580322,
+        0.588468074798584
+      ]
+    },
+    "validation_macro_f1": {
+      "mean": 0.5719398657480875,
+      "std": 0.005778841816209043,
+      "values": [
+        0.5742360353469849,
+        0.5762177109718323,
+        0.5653658509254456
+      ]
+    }
+  },
+  "checkpoints-test": {
+    "checkpoint": "step_8000.pt",
+    "checkpoint_path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/checkpoints-test/step_8000.pt",
+    "global_step": 8000,
+    "model_name": "resnet9",
+    "selection_rule": "highest mean validation macro-F1; validation accuracy tie-break",
+    "test_accuracy": {
+      "mean": 0.4479985038439433,
+      "std": 0.017543408047321154,
+      "values": [
+        0.4506172835826874,
+        0.4292929172515869,
+        0.46408531069755554
+      ]
+    },
+    "test_macro_f1": {
+      "mean": 0.4268897275129954,
+      "std": 0.016972386301475673,
+      "values": [
+        0.42899781465530396,
+        0.40896177291870117,
+        0.4427095949649811
+      ]
+    },
+    "validation_accuracy": {
+      "mean": 0.4580742418766022,
+      "std": 0.01090782783914903,
+      "values": [
+        0.47032222151756287,
+        0.45449405908584595,
+        0.4494064450263977
+      ]
+    },
+    "validation_macro_f1": {
+      "mean": 0.4387337664763133,
+      "std": 0.011170525254518067,
+      "values": [
+        0.4502943158149719,
+        0.437907874584198,
+        0.4279991090297699
+      ]
+    }
+  }
+}
