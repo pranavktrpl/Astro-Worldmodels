@@ -698,6 +698,29 @@ The weakest class, disturbed, is visually heterogeneous. Cigar-shaped smooth
 is also difficult and has only 334 examples. The strongest classes have both
 clear global geometry and substantially more labeled support.
 
+Held-out test behavior, averaged across the three stratified splits:
+
+![Galaxy10 per-class accuracy and F1 radar plots](Evals/galaxy10_checkpoint_evolution/results/best_model_galaxy10_per_class_radar.png)
+
+Here, per-class accuracy means recall: the fraction of examples from a true
+class assigned to that class. The dashed rings are the unweighted class means:
+72.5% balanced accuracy and 70.2% macro-F1. The ordinary example-weighted test
+accuracy is 71.8%.
+
+### Model size versus Galaxy10 accuracy
+
+| Model | Trainable parameters | Selected checkpoint | Validation accuracy | Test accuracy |
+|---|---:|---:|---:|---:|
+| ViT-L/14 | 310.80M | 52,000 | 70.23% +/- 0.94 | **71.83% +/- 0.84** |
+| ViT-S/14 | 23.04M | 21,000 | 59.13% +/- 0.26 | **61.19% +/- 1.42** |
+| ResNet9 baseline | 9.01M | 8,000 | 45.81% +/- 1.09 | **44.80% +/- 1.75** |
+
+The directly comparable ViT scaling result is a 13.49x parameter increase from
+ViT-S/14 to ViT-L/14 for a 10.64 percentage-point increase in mean test
+accuracy. ResNet9 is smaller still, but differs in view count and training
+history, so it is best treated as an early baseline rather than a clean scaling
+point.
+
 ## How To Select A Model
 
 ### Recommended default

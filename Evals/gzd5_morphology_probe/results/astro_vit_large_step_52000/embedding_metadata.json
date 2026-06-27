@@ -1,0 +1,50 @@
+{
+  "checkpoint": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_52000.pt",
+  "global_step": 52000,
+  "cfg": {
+    "sigreg_num_points": 17,
+    "sigreg_num_slices": 1024,
+    "model_name": "vit_large_patch14_dinov2.lvd142m",
+    "pretrained_backbone": false,
+    "dataset_name": "Smith42/galaxies",
+    "columns": [
+      "image_crop"
+    ],
+    "bs": 192,
+    "num_workers": 1,
+    "proj_dim": 64,
+    "Vg": 2,
+    "Vl": 8,
+    "lambd": 0.05,
+    "lr": 0.0005,
+    "wd": 0.05,
+    "min_lr": 1e-06,
+    "warmup_steps": 1000,
+    "grad_accum_steps": 1,
+    "epochs": 5,
+    "safe_samples_per_rank_per_epoch": 2109696,
+    "steps_per_epoch": 10988,
+    "total_steps": 54940,
+    "train_num_images": 80000000,
+    "amp_dtype": "bf16",
+    "entity": "pranavktrpl-personal",
+    "project": "astrojepa",
+    "run_name": "VitLargePatch14_OfficialTrain5_bs192_Epoch5",
+    "log_every": 10,
+    "ckpt_every": 4000,
+    "save_dir": "./checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "resume_path": "./checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_12000.pt",
+    "wandb_run_id": "najxg1zj",
+    "wandb_resume": "must"
+  },
+  "model_name": "vit_large_patch14_dinov2.lvd142m",
+  "embedding_dim": 1024,
+  "backbone_params": 304367616,
+  "image_size": 140,
+  "train_rows": 179519,
+  "test_rows": 44896,
+  "embedding_files": {
+    "train": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/train_embeddings.npy",
+    "test": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/test_embeddings.npy"
+  }
+}

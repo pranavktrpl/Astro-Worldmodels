@@ -6,6 +6,65 @@
 #model checkpoints
 *.pt
 *.h5
+
 # Python cache
 __pycache__/
 *.pyc
+
+# Local runtime/cache noise
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+wandb/
+logs/
+*.log
+*.tmp
+*.temp
+
+# Large binary/data artifacts
+*.npy
+*.npz
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.parquet
+*.feather
+*.pkl
+*.pickle
+
+# Downloaded evaluation datasets and vendored external repos
+Evals/gzd5_morphology_probe/data/
+Evals/gzd5_morphology_probe/external/
+Evals/gzd5_morphology_probe/trash/
+
+# GZD-5 generated embeddings are large; keep only compact summaries/figures.
+Evals/gzd5_morphology_probe/results/**
+!Evals/gzd5_morphology_probe/results/
+!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/
+!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/metrics.csv
+!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/metrics.json
+!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/embedding_metadata.json
+!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/radar_accuracy.png
+!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/radar_f1.png
+!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/astroclip_vs_ours_gzd5_radar.png
+
+# Patch/attention diagnostics: keep scripts plus representative summary outputs,
+# skip arrays, copied reference assets, raw images, and per-layer image dumps.
+Evals/vit_patch_attention_diagnostics/results/**
+!Evals/vit_patch_attention_diagnostics/results/
+!Evals/vit_patch_attention_diagnostics/results/comparison_grid.png
+!Evals/vit_patch_attention_diagnostics/results/provenance.json
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/metadata.json
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/pca_rgb.png
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/heat_lastlayer.png
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/heat_rollout.png
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_layers_grid.png
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_small_step_21000/
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_small_step_21000/metadata.json
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_small_step_21000/pca_rgb.png
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_small_step_21000/heat_lastlayer.png
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_small_step_21000/heat_rollout.png
+!Evals/vit_patch_attention_diagnostics/results/astro_vit_small_step_21000/cls_attention_layers_grid.png

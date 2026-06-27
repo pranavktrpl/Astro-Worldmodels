@@ -1,0 +1,235 @@
+{
+  "attention_layers": 24,
+  "attention_shape": [
+    577,
+    577
+  ],
+  "cfg": {
+    "Vg": 2,
+    "Vl": 8,
+    "amp_dtype": "bf16",
+    "bs": 192,
+    "ckpt_every": 4000,
+    "columns": [
+      "image_crop"
+    ],
+    "dataset_name": "Smith42/galaxies",
+    "entity": "pranavktrpl-personal",
+    "epochs": 5,
+    "grad_accum_steps": 1,
+    "lambd": 0.05,
+    "log_every": 10,
+    "lr": 0.0005,
+    "min_lr": 1e-06,
+    "model_name": "vit_large_patch14_dinov2.lvd142m",
+    "num_workers": 1,
+    "pretrained_backbone": false,
+    "proj_dim": 64,
+    "project": "astrojepa",
+    "resume_path": "./checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_12000.pt",
+    "run_name": "VitLargePatch14_OfficialTrain5_bs192_Epoch5",
+    "safe_samples_per_rank_per_epoch": 2109696,
+    "save_dir": "./checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504",
+    "sigreg_num_points": 17,
+    "sigreg_num_slices": 1024,
+    "steps_per_epoch": 10988,
+    "total_steps": 54940,
+    "train_num_images": 80000000,
+    "wandb_resume": "must",
+    "wandb_run_id": "najxg1zj",
+    "warmup_steps": 1000,
+    "wd": 0.05
+  },
+  "checkpoint": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_52000.pt",
+  "display_name": "Astro ViT-L/14 step 52000",
+  "embedding_dim": 1024,
+  "global_step": 52000,
+  "label": "astro_vit_large_step_52000",
+  "layerwise_cls_attention": [
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_01_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_01_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_01_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_01_heat.png",
+      "layer": 1
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_02_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_02_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_02_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_02_heat.png",
+      "layer": 2
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_03_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_03_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_03_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_03_heat.png",
+      "layer": 3
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_04_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_04_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_04_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_04_heat.png",
+      "layer": 4
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_05_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_05_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_05_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_05_heat.png",
+      "layer": 5
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_06_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_06_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_06_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_06_heat.png",
+      "layer": 6
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_07_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_07_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_07_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_07_heat.png",
+      "layer": 7
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_08_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_08_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_08_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_08_heat.png",
+      "layer": 8
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_09_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_09_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_09_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_09_heat.png",
+      "layer": 9
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_10_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_10_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_10_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_10_heat.png",
+      "layer": 10
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_11_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_11_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_11_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_11_heat.png",
+      "layer": 11
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_12_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_12_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_12_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_12_heat.png",
+      "layer": 12
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_13_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_13_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_13_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_13_heat.png",
+      "layer": 13
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_14_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_14_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_14_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_14_heat.png",
+      "layer": 14
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_15_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_15_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_15_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_15_heat.png",
+      "layer": 15
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_16_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_16_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_16_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_16_heat.png",
+      "layer": 16
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_17_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_17_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_17_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_17_heat.png",
+      "layer": 17
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_18_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_18_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_18_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_18_heat.png",
+      "layer": 18
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_19_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_19_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_19_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_19_heat.png",
+      "layer": 19
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_20_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_20_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_20_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_20_heat.png",
+      "layer": 20
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_21_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_21_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_21_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_21_heat.png",
+      "layer": 21
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_22_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_22_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_22_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_22_heat.png",
+      "layer": 22
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_23_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_23_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_23_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_23_heat.png",
+      "layer": 23
+    },
+    {
+      "gray_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_24_gray.png",
+      "grid_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_24_grid.npy",
+      "heat_npy": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_24_heat.npy",
+      "heat_png": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/layer_24_heat.png",
+      "layer": 24
+    }
+  ],
+  "layerwise_cls_attention_contact_sheet": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer/cls_attention_layers_grid.png",
+  "layerwise_cls_attention_dir": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/vit_patch_attention_diagnostics/results/astro_vit_large_step_52000/cls_attention_by_layer",
+  "layerwise_cls_attention_png_count": 24,
+  "model_name": "vit_large_patch14_dinov2.lvd142m",
+  "num_blocks": 24,
+  "num_features": 1024,
+  "num_prefix_tokens": 1,
+  "patch_grid": [
+    24,
+    24
+  ],
+  "patch_size": [
+    14,
+    14
+  ],
+  "patch_token_count": 576,
+  "token_count": 577
+}

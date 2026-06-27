@@ -46,6 +46,13 @@ All outputs remain in `Evals/galaxy10_checkpoint_evolution/results`:
 - macro-F1 and accuracy evolution plots for each family;
 - cross-model validation comparison plots;
 - per-class F1 heatmap for selected checkpoints.
+- side-by-side per-class accuracy and F1 radar plots for the strongest model.
+
+Regenerate the selected-model radar plots with:
+
+```bash
+python Evals/galaxy10_checkpoint_evolution/plot_best_model_radar.py
+```
 
 ## Completed result
 
