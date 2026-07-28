@@ -226,6 +226,9 @@ The cleanest next comparisons are:
    - Galaxy10 DECaLS includes `redshift` in the HDF5 according to the dataset
      documentation.
    - Report R2, MAE, RMSE, and normalized error.
+   - Implemented in `Evals/redshift_regression/` for the recommended ViT-L
+     `step_52000` and ViT-S `step_21000` checkpoints, with ridge, kNN, and MLP
+     heads; awaiting a cluster run.
 
 4. **Physical property regression.**
    - Requires a matched catalog such as PROVABGS-style labels.
@@ -240,6 +243,7 @@ The cleanest next comparisons are:
 | `Evals/galaxy10_checkpoint_evolution/results/dataset_metadata.json` | Galaxy10 class names, counts, and HDF5 path |
 | `Evals/galaxy10_checkpoint_evolution/results/best_model_galaxy10_per_class_metrics.json` | Best local model per-class recall/F1 |
 | `Evals/vit_patch_attention_diagnostics/README.md` | PCA and attention diagnostics for selected checkpoints |
+| `Evals/redshift_regression/README.md` | Redshift regression probe (ridge/kNN/MLP) for the recommended checkpoints |
 
 ## Sources
 
