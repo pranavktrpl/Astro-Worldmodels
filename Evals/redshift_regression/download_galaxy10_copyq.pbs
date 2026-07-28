@@ -1,0 +1,41 @@
+#!/bin/bash
+# Download the Galaxy10 DECaLS HDF5 (2.73 GB) from Zenodo on the copyq
+# data-transfer queue. Submit from the repo root:
+#
+#   qsub -P <project> Evals/redshift_regression/download_galaxy10_copyq.pbs
+#
+# Edit the -P and -l storage directives (or pass -P at qsub time) to match
+# your project code and the filesystem the repo lives on.
+#PBS -q copyq
+#PBS -N galaxy10_download
+#PBS -l ncpus=1
+#PBS -l mem=4GB
+#PBS -l walltime=02:00:00
+#PBS -l wd
+#PBS -j oe
+
+set -euo pipefail
+
+REPO_DIR="${PBS_O_WORKDIR:-$(pwd)}"
+TARGET_DIR="${REPO_DIR}/Evals/DeCals_linearProbing/galaxy10"
+TARGET="${TARGET_DIR}/Galaxy10_DECals.h5"
+URL="https://zenodo.org/records/10845026/files/Galaxy10_DECals.h5"
+EXPECTED_BYTES=2735267419
+
+mkdir -p "${TARGET_DIR}"
+
+if [ -f "${TARGET}" ] && [ "$(stat -c%s "${TARGET}" 2>/dev/null || stat -f%z "${TARGET}")" -eq "${EXPECTED_BYTES}" ]; then
+    echo "Already complete: ${TARGET}"
+    exit 0
+fi
+
+echo "Downloading Galaxy10_DECals.h5 to ${TARGET}"
+curl -L -C - --retry 5 --retry-delay 10 -o "${TARGET}" "${URL}"
+
+ACTUAL_BYTES="$(stat -c%s "${TARGET}" 2>/dev/null || stat -f%z "${TARGET}")"
+if [ "${ACTUAL_BYTES}" -ne "${EXPECTED_BYTES}" ]; then
+    echo "ERROR: size mismatch: got ${ACTUAL_BYTES}, expected ${EXPECTED_BYTES}" >&2
+    exit 1
+fi
+
+echo "Done: $(ls -lh "${TARGET}")"
