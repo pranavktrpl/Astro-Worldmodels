@@ -28,9 +28,9 @@ Targets are filtered to finite, positive redshifts; kept/dropped counts are
 recorded in `metrics.json` under `target_stats`.
 
 Splits are 80/10/10, stratified over 10 redshift quantile bins, repeated with
-seeds 42, 43, 44. Features are standardized using train statistics only. All
-hyperparameters are selected on validation R^2 only; test metrics are reported
-after selection.
+ten seeds (42 through 51). Features are standardized using train statistics
+only. All hyperparameters are selected on validation R^2 only; test metrics
+are reported after selection.
 
 Three heads run on the same embeddings per checkpoint:
 
@@ -42,13 +42,20 @@ Three heads run on the same embeddings per checkpoint:
 
 ## Metrics
 
-Reported per head as mean +/- std over the three split seeds:
+Reported per head as mean +/- std over the ten split seeds:
 
 - **R2** on raw redshift;
 - **MAE** and **RMSE**;
 - **NMAD**: `1.4826 * median(|dz/(1+z) - median|)`, the standard
   photometric-redshift scatter statistic;
 - **outlier fraction**: share of `|dz|/(1+z) > 0.05`.
+
+Each head also reports a `test_clipped` block: the same metrics restricted to
+test galaxies with `z < 0.25`. Galaxy10 redshifts bunch below ~0.25 with a
+thin high-z tail, so full-range R2 is dominated by which tail objects land in
+a given 10% test split (observed spread: ridge R2 0.21 to 0.75 across seeds).
+Clipped R2 and NMAD are the split-stable numbers; quote those alongside
+full-range R2 +/- std.
 
 ## Run
 

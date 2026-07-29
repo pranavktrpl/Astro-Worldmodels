@@ -59,11 +59,15 @@ MODELS = {
 DEFAULT_H5 = (
     REPO_ROOT / "Evals" / "DeCals_linearProbing" / "galaxy10" / "Galaxy10_DECals.h5"
 )
-SPLIT_SEEDS = [42, 43, 44]
+SPLIT_SEEDS = list(range(42, 52))
 STRATIFY_BINS = 10
 RIDGE_L2_GRID = [1e-4, 1e-2, 1.0, 1e2, 1e4]
 KNN_K_GRID = [4, 16, 64]
 OUTLIER_THRESHOLD = 0.05
+# Galaxy10 redshifts bunch below ~0.25 with a thin high-z tail; full-range R2
+# is dominated by which tail objects land in a 10% test split. Clipped metrics
+# exclude the tail so they stay comparable across split seeds.
+CLIPPED_Z_MAX = 0.25
 
 
 def parse_args() -> argparse.Namespace:
@@ -422,6 +426,12 @@ def evaluate_split_seed(
     }
     test_predictions["mlp"] = predict_mlp(mlp, test_x)
 
+    clip_mask = test_y < CLIPPED_Z_MAX
+    for head in ("ridge", "knn", "mlp"):
+        heads[head]["test_clipped"] = regression_metrics(
+            test_predictions[head][clip_mask], test_y[clip_mask]
+        )
+
     result = {
         "split_seed": split_seed,
         "split_sizes": {
@@ -438,7 +448,7 @@ def summarize_repeats(repeats: list[dict[str, Any]]) -> dict[str, Any]:
     summary: dict[str, Any] = {}
     for head in ("ridge", "knn", "mlp"):
         summary[head] = {}
-        for split in ("validation", "test"):
+        for split in ("validation", "test", "test_clipped"):
             summary[head][split] = {}
             for metric in ("r2", "mae", "rmse", "nmad", "outlier_fraction"):
                 values = np.asarray(
@@ -488,10 +498,11 @@ def write_summary_csv(output_dir: Path, all_results: list[dict[str, Any]]) -> No
     for result in all_results:
         for head in ("ridge", "knn", "mlp"):
             row = {"model": result["label"], "head": head}
-            for metric in ("r2", "mae", "rmse", "nmad", "outlier_fraction"):
-                stats = result["summary"][head]["test"][metric]
-                row[f"test_{metric}_mean"] = stats["mean"]
-                row[f"test_{metric}_std"] = stats["std"]
+            for split in ("test", "test_clipped"):
+                for metric in ("r2", "mae", "rmse", "nmad", "outlier_fraction"):
+                    stats = result["summary"][head][split][metric]
+                    row[f"{split}_{metric}_mean"] = stats["mean"]
+                    row[f"{split}_{metric}_std"] = stats["std"]
             rows.append(row)
     with (output_dir / "summary.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
@@ -538,6 +549,7 @@ def evaluate_model(
         "ridge_l2_grid": RIDGE_L2_GRID,
         "knn_k_grid": KNN_K_GRID,
         "outlier_threshold": OUTLIER_THRESHOLD,
+        "clipped_z_max": CLIPPED_Z_MAX,
         "repeats": repeats,
         "summary": summarize_repeats(repeats),
         "elapsed_seconds": time.time() - started,
@@ -559,9 +571,12 @@ def main() -> None:
     for result in all_results:
         for head in ("ridge", "knn", "mlp"):
             test = result["summary"][head]["test"]
+            clipped = result["summary"][head]["test_clipped"]
             print(
                 f"{result['label']} {head}: "
                 f"test R2={test['r2']['mean']:.4f} +/- {test['r2']['std']:.4f}, "
+                f"clipped(z<{CLIPPED_Z_MAX}) R2={clipped['r2']['mean']:.4f} "
+                f"+/- {clipped['r2']['std']:.4f}, "
                 f"NMAD={test['nmad']['mean']:.4f}, "
                 f"outliers={test['outlier_fraction']['mean']:.4f}"
             )
