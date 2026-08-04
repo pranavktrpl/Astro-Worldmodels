@@ -6,8 +6,12 @@ Published numbers are transcribed in `competitor_baselines.json`; local numbers 
 
 | Model | Head | Test accuracy | Test macro-F1 | Source |
 |---|---|---:|---:|---|
+| Ours ViT-L/14 (step 52000) | 2-layer MLP (AION head repro) | 0.7245 ± 0.0133 | 0.7091 ± 0.0085 | local |
 | Ours ViT-L/14 (step_52000) | linear probe (LBFGS) on frozen embeddings | 0.7183 ± 0.0084 | 0.7023 ± 0.0090 | local |
+| Ours ViT-L/14 (step 52000) | 4-layer MLP (AstroCLIP head repro) | 0.6644 ± 0.0085 | 0.5566 ± 0.0069 | local |
+| Ours ViT-S/14 (step 21000) | 2-layer MLP (AION head repro) | 0.6257 ± 0.0105 | 0.5889 ± 0.0063 | local |
 | Ours ViT-S/14 (step_21000) | linear probe (LBFGS) on frozen embeddings | 0.6119 ± 0.0142 | 0.5934 ± 0.0116 | local |
+| Ours ViT-S/14 (step 21000) | 4-layer MLP (AstroCLIP head repro) | 0.5750 ± 0.0143 | 0.4906 ± 0.0144 | local |
 | Ours ResNet9 (step_8000) | linear probe (LBFGS) on frozen embeddings | 0.4480 ± 0.0175 | 0.4269 ± 0.0170 | local |
 | AION-1-B | 2-layer MLP on frozen embeddings | 0.840 | n/r | published |
 | AION-1-L | 2-layer MLP on frozen embeddings | 0.872 | n/r | published |
@@ -37,7 +41,12 @@ Caveats: Same question set and debiased-label protocol as our gzd5_morphology_pr
 
 | Model | Head / input | Test R² | Test R² (z < 0.25) | Source |
 |---|---|---:|---:|---|
-| _pending — run `redshift_regression/redshift_probe.py` on the cluster_ | | | | local |
+| Ours ViT-L/14 (step 52000) | ridge on frozen image embeddings | 0.6230 ± 0.1780 | 0.7393 ± 0.0144 | local |
+| Ours ViT-L/14 (step 52000) | knn on frozen image embeddings | 0.5574 ± 0.1604 | 0.6630 ± 0.0199 | local |
+| Ours ViT-L/14 (step 52000) | mlp on frozen image embeddings | 0.6051 ± 0.1816 | 0.7215 ± 0.0770 | local |
+| Ours ViT-S/14 (step 21000) | ridge on frozen image embeddings | 0.5648 ± 0.1638 | 0.6740 ± 0.0196 | local |
+| Ours ViT-S/14 (step 21000) | knn on frozen image embeddings | 0.5046 ± 0.1405 | 0.5973 ± 0.0189 | local |
+| Ours ViT-S/14 (step 21000) | mlp on frozen image embeddings | 0.5773 ± 0.1712 | 0.6863 ± 0.0255 | local |
 | AstroCLIP Image, zero-shot kNN | image | 0.79 | n/r | published |
 | AstroCLIP Image, few-shot MLP | image | 0.78 | n/r | published |
 | AstroCLIP Spectrum, few-shot MLP | spectrum | 0.98 | n/r | published |
