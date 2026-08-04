@@ -4,6 +4,7 @@
 .env
 Evals/cluster/evals.env
 logs/cluster_evals/
+Evals/desi_crossmatch/data/
 
 #model checkpoints
 *.pt

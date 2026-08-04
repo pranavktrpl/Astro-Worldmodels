@@ -6,9 +6,10 @@ frozen backbones and heads, but evaluated on the exact sample and 80/20 split
 behind AstroCLIP's published image-encoder numbers (zero-shot kNN R2=0.79,
 few-shot MLP R2=0.78), so the R2 denominators are finally comparable.
 
-Data: astroclip_desi.1.1.5.h5 (see download_astroclip_desi.sh), 10 groups of
-{images (N,152,152,3) float32 grz fluxes, redshifts, targetids}; within each
-group the first 80% is train and the last 20% is test (AstroCLIP's split).
+Data: parquet shards from the mhsotoudeh/astroclip HF mirror (see
+download_astroclip_desi.sh) — image (152,152,3) float32 grz fluxes, spectrum,
+redshift, targetid, with AstroCLIP's train/test split preserved as the
+dataset's train/test splits.
 
 Preprocessing: raw grz fluxes are mapped to RGB in [0,1] with the Legacy
 Survey dr2-style arcsinh mapping (legacypipe; also used by Stein et al. and
@@ -33,15 +34,15 @@ import time
 from pathlib import Path
 from typing import Any
 
-import h5py
 import numpy as np
+import pyarrow.parquet as pq
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 EVALS_DIR = SCRIPT_DIR.parent
-DEFAULT_H5 = SCRIPT_DIR / "data" / "astroclip_desi.1.1.5.h5"
+DEFAULT_DATA_DIR = SCRIPT_DIR / "data" / "astroclip"
 
 
 def load_module(name: str, path: Path):
@@ -63,7 +64,6 @@ DR2_RGB_SCALES = {"g": (2, 6.0), "r": (1, 3.4), "z": (0, 2.2)}
 DR2_RGB_M = 0.03
 DR2_RGB_Q = 20.0
 BANDS = ("g", "r", "z")
-TRAIN_FRACTION = 0.8
 
 
 def dr2_rgb_batch(batch: np.ndarray) -> np.ndarray:
@@ -89,7 +89,7 @@ def dr2_rgb_batch(batch: np.ndarray) -> np.ndarray:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", choices=[*rp.MODELS, "all"], default="all")
-    parser.add_argument("--h5", type=Path, default=DEFAULT_H5)
+    parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
     parser.add_argument("--output-dir", type=Path, default=SCRIPT_DIR / "results")
     parser.add_argument("--input-size", type=int, default=140)
     parser.add_argument("--batch-size", type=int, default=256)
@@ -102,26 +102,55 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_targets(h5_path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Global redshift/targetid arrays plus AstroCLIP's per-group test mask."""
+def split_files(data_dir: Path) -> tuple[list[Path], list[Path]]:
+    """Ordered (train, test) parquet shards. Global row order everywhere in
+    this module is: all train shards in filename order, then all test shards."""
+    train = sorted((data_dir / "data").glob("train-*.parquet"))
+    test = sorted((data_dir / "data").glob("test-*.parquet"))
+    if not train or not test:
+        raise RuntimeError(
+            f"No parquet shards under {data_dir}/data — run "
+            "download_astroclip_desi.sh first."
+        )
+    return train, test
+
+
+def read_targets(data_dir: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Global redshift/targetid arrays plus the AstroCLIP test-split mask."""
+    train, test = split_files(data_dir)
     redshifts, targetids, is_test = [], [], []
-    with h5py.File(h5_path, "r") as handle:
-        for group_key in sorted(handle.keys(), key=int):
-            group = handle[group_key]
-            n = len(group["redshifts"])
-            split_at = int(TRAIN_FRACTION * n)
-            redshifts.append(np.asarray(group["redshifts"][:], dtype=np.float64))
-            targetids.append(np.asarray(group["targetids"][:], dtype=np.int64))
-            mask = np.zeros(n, dtype=bool)
-            mask[split_at:] = True
-            is_test.append(mask)
+    for flag, files in ((False, train), (True, test)):
+        for path in files:
+            table = pq.read_table(path, columns=["redshift", "targetid"])
+            n = len(table)
+            redshifts.append(
+                table.column("redshift").to_numpy().astype(np.float64)
+            )
+            targetids.append(table.column("targetid").to_numpy())
+            is_test.append(np.full(n, flag))
     return np.concatenate(redshifts), np.concatenate(targetids), np.concatenate(is_test)
+
+
+def iter_image_batches(files: list[Path], batch_size: int):
+    """Yield (B,H,W,3) float32 flux arrays from nested-list image columns."""
+    for path in files:
+        parquet_file = pq.ParquetFile(path)
+        for batch in parquet_file.iter_batches(
+            batch_size=batch_size, columns=["image"]
+        ):
+            column = batch.column("image")
+            flat = column.flatten().flatten().flatten().to_numpy(
+                zero_copy_only=False
+            )
+            count = len(column)
+            side = int(round((flat.size / (count * 3)) ** 0.5))
+            yield flat.reshape(count, side, side, 3).astype(np.float32)
 
 
 @torch.inference_mode()
 def extract_embeddings(
     backbone: torch.nn.Module,
-    h5_path: Path,
+    data_dir: Path,
     input_size: int,
     batch_size: int,
     device: torch.device,
@@ -129,36 +158,30 @@ def extract_embeddings(
 ) -> torch.Tensor:
     from contextlib import nullcontext
 
+    train, test = split_files(data_dir)
     chunks = []
-    with h5py.File(h5_path, "r") as handle:
-        group_keys = sorted(handle.keys(), key=int)
-        total = sum(len(handle[key]["images"]) for key in group_keys)
-        progress = tqdm(total=total, desc=description, leave=False)
-        for group_key in group_keys:
-            images = handle[group_key]["images"]
-            for start in range(0, len(images), batch_size):
-                stop = min(start + batch_size, len(images))
-                array = np.asarray(images[start:stop], dtype=np.float32)
-                rgb = dr2_rgb_batch(array)
-                batch = torch.from_numpy(rgb).permute(0, 3, 1, 2)
-                batch = batch.to(device=device, dtype=torch.float32)
-                batch = F.interpolate(
-                    batch,
-                    size=(input_size, input_size),
-                    mode="bicubic",
-                    align_corners=False,
-                    antialias=True,
-                )
-                amp = (
-                    torch.autocast("cuda", dtype=torch.bfloat16)
-                    if device.type == "cuda"
-                    else nullcontext()
-                )
-                with amp:
-                    features = backbone(batch)
-                chunks.append(features.float().cpu())
-                progress.update(stop - start)
-        progress.close()
+    progress = tqdm(desc=description, leave=False)
+    for array in iter_image_batches(train + test, batch_size):
+        rgb = dr2_rgb_batch(array)
+        batch = torch.from_numpy(rgb).permute(0, 3, 1, 2)
+        batch = batch.to(device=device, dtype=torch.float32)
+        batch = F.interpolate(
+            batch,
+            size=(input_size, input_size),
+            mode="bicubic",
+            align_corners=False,
+            antialias=True,
+        )
+        amp = (
+            torch.autocast("cuda", dtype=torch.bfloat16)
+            if device.type == "cuda"
+            else nullcontext()
+        )
+        with amp:
+            features = backbone(batch)
+        chunks.append(features.float().cpu())
+        progress.update(len(array))
+    progress.close()
     return torch.cat(chunks)
 
 
@@ -174,7 +197,7 @@ def cached_embeddings(
     backbone, meta = rp.load_backbone(spec["checkpoint"], device)
     embeddings = extract_embeddings(
         backbone,
-        args.h5,
+        args.data_dir,
         args.input_size,
         args.batch_size,
         device,
@@ -188,8 +211,9 @@ def cached_embeddings(
             "input_size": args.input_size,
             "preprocessing": "dr2_rgb_arcsinh_to_0_1_then_bicubic_resize",
             "dr2_rgb": {"scales": DR2_RGB_SCALES, "m": DR2_RGB_M, "q": DR2_RGB_Q},
-            "source_h5": str(args.h5.resolve()),
-            "split": "AstroCLIP per-group 80/20 (first 80% train, last 20% test)",
+            "source": "mhsotoudeh/astroclip parquet mirror: "
+            + str(args.data_dir.resolve()),
+            "split": "AstroCLIP train/test splits as shipped in the dataset",
         }
     )
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -291,7 +315,7 @@ def evaluate_model(
     started = time.time()
     output_dir = args.output_dir.resolve() / spec["label"]
     embeddings, embed_meta = cached_embeddings(spec, args, device)
-    redshifts, targetids, is_test = read_targets(args.h5)
+    redshifts, targetids, is_test = read_targets(args.data_dir)
     if len(redshifts) != len(embeddings):
         raise RuntimeError(
             f"{len(redshifts)} targets but {len(embeddings)} embeddings"

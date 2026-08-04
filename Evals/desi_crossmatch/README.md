@@ -9,17 +9,24 @@ to AstroCLIP's.
 
 ## The cross-match already exists — don't rebuild it
 
-AstroCLIP released their cross-matched dataset (built on Stein et al. 2022's
-Legacy Survey cutouts × DESI EDR spectra) as a single HDF5:
+AstroCLIP built their cross-matched dataset on Stein et al. 2022's Legacy
+Survey cutouts × DESI EDR spectra. Sourcing it in 2026 is a small saga:
+
+- The original `astroclip_desi.1.1.5.h5` URL (Flatiron, referenced by their
+  loader script) now returns **403 Forbidden**.
+- The author's own HF upload (`EiffL/AstroCLIP`) is **truncated**: 128/138
+  train shards and no test split at all.
+- **`mhsotoudeh/astroclip`** on HF is a complete parquet conversion — same
+  schema (`image` (152,152,3) float32 grz fluxes, `spectrum` (7781,1),
+  `redshift`, `targetid`), all 120 train + 26 test shards (~139k/~30k rows),
+  with AstroCLIP's train/test split preserved as the dataset splits. This is
+  what the download script fetches. Caveat: it's a third-party mirror; if a
+  result ever hinges on it, spot-check targetid overlap against the
+  `EiffL/AstroCLIP` train shards.
 
 ```bash
-bash download_astroclip_desi.sh            # ~60 GB, resumable, run in tmux
+bash download_astroclip_desi.sh            # ~65 GB, resumable, run in tmux
 ```
-
-Contents: 10 groups, each with `images` (N,152,152,3) float32 grz fluxes,
-`spectra` (N,7781,1), `redshifts`, `targetids`. Within each group, the first
-80% is AstroCLIP's train split and the last 20% is test — this probe
-preserves that split exactly.
 
 The from-scratch alternative (only needed for DR10 or a custom footprint):
 MultimodalUniverse's cross-match utilities over `MultimodalUniverse/legacysurvey`
