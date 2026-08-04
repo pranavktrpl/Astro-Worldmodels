@@ -197,6 +197,7 @@ def collect_redshift(evals_root: Path) -> list[dict[str, Any]]:
                 "name": MODEL_LABELS.get(label, f"Ours {label}"),
                 "label": label,
                 "head": head,
+                "sample": "Galaxy10 DECaLS",
             }
             for split in ("test", "test_clipped"):
                 for metric in ("r2", "mae", "rmse", "nmad", "outlier_fraction"):
@@ -204,6 +205,27 @@ def collect_redshift(evals_root: Path) -> list[dict[str, Any]]:
                     row[f"{split}_{metric}"] = stats["mean"]
                     row[f"{split}_{metric}_std"] = stats["std"]
             rows.append(row)
+    return rows
+
+
+def collect_redshift_astroclip_sample(evals_root: Path) -> list[dict[str, Any]]:
+    rows = []
+    results_dir = evals_root / "desi_crossmatch/results"
+    for metrics_path in sorted(results_dir.glob("*/metrics.json")):
+        data = json.loads(metrics_path.read_text())
+        label = metrics_path.parent.name
+        for head in REDSHIFT_HEADS:
+            stats = data["summary"][head]["test"]["r2"]
+            rows.append(
+                {
+                    "name": MODEL_LABELS.get(label, f"Ours {label}"),
+                    "label": label,
+                    "head": head,
+                    "sample": "AstroCLIP sample",
+                    "test_r2": stats["mean"],
+                    "test_r2_std": stats["std"],
+                }
+            )
     return rows
 
 
@@ -346,7 +368,10 @@ def plot_gzd5(
 
 
 def plot_redshift(
-    ours: list[dict[str, Any]], baseline: dict[str, Any], output_dir: Path
+    ours: list[dict[str, Any]],
+    baseline: dict[str, Any],
+    output_dir: Path,
+    matched_sample: bool = False,
 ) -> None:
     models = sorted({row["label"] for row in ours})
     by_model = {
@@ -418,9 +443,14 @@ def plot_redshift(
     ax.set_xticklabels([h.upper() if h == "mlp" else h for h in REDSHIFT_HEADS], color=TEXT)
     ax.set_ylim(0, 1.05)
     ax.set_ylabel("Test R² (mean over 10 split seeds)", color=TEXT_SECONDARY, fontsize=10)
+    subtitle = (
+        "(same eval sample and split as AstroCLIP: DESI-LS × DESI cross-match)"
+        if matched_sample
+        else "(different eval samples: ours Galaxy10 DECaLS, AstroCLIP DESI cross-match)"
+    )
     ax.set_title(
         "Redshift regression on frozen embeddings — ours vs AstroCLIP image encoder\n"
-        "(different eval samples: ours Galaxy10 DECaLS, AstroCLIP DESI cross-match)",
+        + subtitle,
         color=TEXT,
         fontsize=11,
         loc="left",
@@ -499,21 +529,31 @@ def markdown_report(
     lines += ["", f"Caveats: {baselines['gzd5_morphology']['caveats']}"]
 
     lines += ["", "## Redshift regression", ""]
-    lines.append("| Model | Head / input | Test R² | Test R² (z < 0.25) | Source |")
-    lines.append("|---|---|---:|---:|---|")
+    lines.append(
+        "| Model | Head / input | Sample | Test R² | Test R² (z < 0.25) | Source |"
+    )
+    lines.append("|---|---|---|---:|---:|---|")
     for row in redshift:
+        clipped = (
+            f"{row['test_clipped_r2']:.4f} ± {row['test_clipped_r2_std']:.4f}"
+            if "test_clipped_r2" in row
+            else "n/a"
+        )
         lines.append(
             f"| {row['name']} | {row['head']} on frozen image embeddings | "
-            f"{row['test_r2']:.4f} ± {row['test_r2_std']:.4f} | "
-            f"{row['test_clipped_r2']:.4f} ± {row['test_clipped_r2_std']:.4f} | local |"
+            f"{row['sample']} | "
+            f"{row['test_r2']:.4f} ± {row['test_r2_std']:.4f} | {clipped} | local |"
         )
     if not redshift:
         lines.append(
             "| _pending — run `redshift_regression/redshift_probe.py` on the "
-            "cluster_ | | | | local |"
+            "cluster_ | | | | | local |"
         )
     for c in baselines["redshift_regression"]["competitors"]:
-        lines.append(f"| {c['name']} | {c['input']} | {c['r2']:.2f} | n/r | published |")
+        lines.append(
+            f"| {c['name']} | {c['input']} | {c['eval_dataset']} | "
+            f"{c['r2']:.2f} | n/r | published |"
+        )
     lines += ["", f"Caveats: {baselines['redshift_regression']['caveats']}"]
 
     lines += ["", "## Physical property regression (reference targets)", ""]
@@ -541,7 +581,9 @@ def main() -> None:
 
     galaxy10 = collect_galaxy10(args.evals_root)
     gzd5 = collect_gzd5(args.evals_root)
-    redshift = collect_redshift(args.evals_root)
+    redshift_galaxy10 = collect_redshift(args.evals_root)
+    redshift_astroclip = collect_redshift_astroclip_sample(args.evals_root)
+    redshift = redshift_galaxy10 + redshift_astroclip
 
     for task, rows in (
         ("galaxy10", galaxy10),
@@ -577,8 +619,14 @@ def main() -> None:
         plot_galaxy10(galaxy10, baselines["galaxy10_morphology"], output_dir)
     if gzd5:
         plot_gzd5(gzd5, baselines["gzd5_morphology"], output_dir)
-    if redshift:
-        plot_redshift(redshift, baselines["redshift_regression"], output_dir)
+    chart_rows = redshift_astroclip or redshift_galaxy10
+    if chart_rows:
+        plot_redshift(
+            chart_rows,
+            baselines["redshift_regression"],
+            output_dir,
+            matched_sample=bool(redshift_astroclip),
+        )
 
     print(f"wrote {output_dir}/comparison.json, comparison_tables.md and charts")
 

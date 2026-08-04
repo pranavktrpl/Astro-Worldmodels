@@ -39,23 +39,23 @@ Caveats: Same question set and debiased-label protocol as our gzd5_morphology_pr
 
 ## Redshift regression
 
-| Model | Head / input | Test R² | Test R² (z < 0.25) | Source |
-|---|---|---:|---:|---|
-| Ours ViT-L/14 (step 52000) | ridge on frozen image embeddings | 0.6230 ± 0.1780 | 0.7393 ± 0.0144 | local |
-| Ours ViT-L/14 (step 52000) | knn on frozen image embeddings | 0.5574 ± 0.1604 | 0.6630 ± 0.0199 | local |
-| Ours ViT-L/14 (step 52000) | mlp on frozen image embeddings | 0.6051 ± 0.1816 | 0.7215 ± 0.0770 | local |
-| Ours ViT-S/14 (step 21000) | ridge on frozen image embeddings | 0.5648 ± 0.1638 | 0.6740 ± 0.0196 | local |
-| Ours ViT-S/14 (step 21000) | knn on frozen image embeddings | 0.5046 ± 0.1405 | 0.5973 ± 0.0189 | local |
-| Ours ViT-S/14 (step 21000) | mlp on frozen image embeddings | 0.5773 ± 0.1712 | 0.6863 ± 0.0255 | local |
-| AstroCLIP Image, zero-shot kNN | image | 0.79 | n/r | published |
-| AstroCLIP Image, few-shot MLP | image | 0.78 | n/r | published |
-| AstroCLIP Spectrum, few-shot MLP | spectrum | 0.98 | n/r | published |
-| AION-1-B | photometry | 0.75 | n/r | published |
-| AION-1-L | photometry | 0.76 | n/r | published |
-| AION-1-XL | photometry | 0.79 | n/r | published |
-| AION-1-B | photometry+image | 0.93 | n/r | published |
-| AION-1-L | photometry+image | 0.94 | n/r | published |
-| AION-1-XL | photometry+image | 0.94 | n/r | published |
+| Model | Head / input | Sample | Test R² | Test R² (z < 0.25) | Source |
+|---|---|---|---:|---:|---|
+| Ours ViT-L/14 (step 52000) | ridge on frozen image embeddings | Galaxy10 DECaLS | 0.6230 ± 0.1780 | 0.7393 ± 0.0144 | local |
+| Ours ViT-L/14 (step 52000) | knn on frozen image embeddings | Galaxy10 DECaLS | 0.5574 ± 0.1604 | 0.6630 ± 0.0199 | local |
+| Ours ViT-L/14 (step 52000) | mlp on frozen image embeddings | Galaxy10 DECaLS | 0.6051 ± 0.1816 | 0.7215 ± 0.0770 | local |
+| Ours ViT-S/14 (step 21000) | ridge on frozen image embeddings | Galaxy10 DECaLS | 0.5648 ± 0.1638 | 0.6740 ± 0.0196 | local |
+| Ours ViT-S/14 (step 21000) | knn on frozen image embeddings | Galaxy10 DECaLS | 0.5046 ± 0.1405 | 0.5973 ± 0.0189 | local |
+| Ours ViT-S/14 (step 21000) | mlp on frozen image embeddings | Galaxy10 DECaLS | 0.5773 ± 0.1712 | 0.6863 ± 0.0255 | local |
+| AstroCLIP Image, zero-shot kNN | image | DESI-LS images cross-matched with DESI spectra | 0.79 | n/r | published |
+| AstroCLIP Image, few-shot MLP | image | DESI-LS images cross-matched with DESI spectra | 0.78 | n/r | published |
+| AstroCLIP Spectrum, few-shot MLP | spectrum | DESI-LS images cross-matched with DESI spectra | 0.98 | n/r | published |
+| AION-1-B | photometry | PROVABGS + Legacy Survey DR10 + DESI EDR | 0.75 | n/r | published |
+| AION-1-L | photometry | PROVABGS + Legacy Survey DR10 + DESI EDR | 0.76 | n/r | published |
+| AION-1-XL | photometry | PROVABGS + Legacy Survey DR10 + DESI EDR | 0.79 | n/r | published |
+| AION-1-B | photometry+image | PROVABGS + Legacy Survey DR10 + DESI EDR | 0.93 | n/r | published |
+| AION-1-L | photometry+image | PROVABGS + Legacy Survey DR10 + DESI EDR | 0.94 | n/r | published |
+| AION-1-XL | photometry+image | PROVABGS + Legacy Survey DR10 + DESI EDR | 0.94 | n/r | published |
 
 Caveats: Our probe regresses Galaxy10 DECaLS metadata redshifts (z mostly < 0.25) from images alone; AstroCLIP and AION use different cross-matched samples and, for AION, photometry inputs. The AstroCLIP image rows are the closest protocol match (image-only, kNN and MLP heads).
 
