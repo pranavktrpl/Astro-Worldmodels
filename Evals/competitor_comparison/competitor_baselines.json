@@ -1,0 +1,170 @@
+{
+  "provenance": "Published downstream-eval numbers transcribed from Evals/README.md (AION-1 paper and AstroCLIP paper). Update here, not in code.",
+  "galaxy10_morphology": {
+    "task": "Galaxy Zoo 10 / Galaxy10 DECaLS 10-way morphology classification",
+    "metric": "test accuracy",
+    "competitors": [
+      {
+        "name": "AION-1-B",
+        "head": "2-layer MLP on frozen embeddings",
+        "eval_dataset": "Galaxy Zoo 10 cross-matched with Legacy Survey DR10",
+        "test_accuracy": 0.84
+      },
+      {
+        "name": "AION-1-L",
+        "head": "2-layer MLP on frozen embeddings",
+        "eval_dataset": "Galaxy Zoo 10 cross-matched with Legacy Survey DR10",
+        "test_accuracy": 0.872
+      },
+      {
+        "name": "AION-1-XL",
+        "head": "2-layer MLP on frozen embeddings",
+        "eval_dataset": "Galaxy Zoo 10 cross-matched with Legacy Survey DR10",
+        "test_accuracy": 0.865
+      }
+    ],
+    "caveats": "AION evaluates on a Galaxy Zoo 10 / Legacy Survey DR10 cross-match (~8k galaxies), not the Galaxy10 DECaLS HDF5. Our linear-probe rows additionally differ in head capacity; the galaxy10_matched_heads rows reproduce AION's 2-layer MLP head (and AstroCLIP's 4-layer MLP) exactly, leaving only the dataset difference."
+  },
+  "gzd5_morphology": {
+    "task": "Galaxy Zoo DECaLS (GZD-5) question-wise morphology",
+    "metric": "per-question accuracy and F1",
+    "competitors": [
+      {
+        "name": "AstroCLIP Image ViT-L",
+        "head": "4-layer MLP on frozen image embeddings",
+        "eval_dataset": "GZD-5",
+        "mean_accuracy": 0.761,
+        "mean_f1": 0.743,
+        "per_question": {
+          "smooth": { "accuracy": 0.83, "f1": 0.83 },
+          "disk-edge-on": { "accuracy": 0.97, "f1": 0.97 },
+          "spiral-arms": { "accuracy": 0.92, "f1": 0.94 },
+          "bar": { "accuracy": 0.56, "f1": 0.54 },
+          "bulge-size": { "accuracy": 0.79, "f1": 0.78 },
+          "how-rounded": { "accuracy": 0.74, "f1": 0.74 },
+          "edge-on-bulge": { "accuracy": 0.82, "f1": 0.81 },
+          "spiral-winding": { "accuracy": 0.74, "f1": 0.68 },
+          "spiral-arm-count": { "accuracy": 0.44, "f1": 0.41 },
+          "merging": { "accuracy": 0.80, "f1": 0.73 }
+        }
+      }
+    ],
+    "caveats": "Same question set and debiased-label protocol as our gzd5_morphology_probe, so this is the closest to a like-for-like comparison we have."
+  },
+  "redshift_regression": {
+    "task": "Galaxy redshift regression on frozen embeddings",
+    "metric": "test R2",
+    "competitors": [
+      {
+        "name": "AstroCLIP Image, zero-shot kNN",
+        "input": "image",
+        "eval_dataset": "DESI-LS images cross-matched with DESI spectra",
+        "r2": 0.79
+      },
+      {
+        "name": "AstroCLIP Image, few-shot MLP",
+        "input": "image",
+        "eval_dataset": "DESI-LS images cross-matched with DESI spectra",
+        "r2": 0.78
+      },
+      {
+        "name": "AstroCLIP Spectrum, few-shot MLP",
+        "input": "spectrum",
+        "eval_dataset": "DESI-LS images cross-matched with DESI spectra",
+        "r2": 0.98
+      },
+      {
+        "name": "AION-1-B",
+        "input": "photometry",
+        "eval_dataset": "PROVABGS + Legacy Survey DR10 + DESI EDR",
+        "r2": 0.75
+      },
+      {
+        "name": "AION-1-L",
+        "input": "photometry",
+        "eval_dataset": "PROVABGS + Legacy Survey DR10 + DESI EDR",
+        "r2": 0.76
+      },
+      {
+        "name": "AION-1-XL",
+        "input": "photometry",
+        "eval_dataset": "PROVABGS + Legacy Survey DR10 + DESI EDR",
+        "r2": 0.79
+      },
+      {
+        "name": "AION-1-B",
+        "input": "photometry+image",
+        "eval_dataset": "PROVABGS + Legacy Survey DR10 + DESI EDR",
+        "r2": 0.93
+      },
+      {
+        "name": "AION-1-L",
+        "input": "photometry+image",
+        "eval_dataset": "PROVABGS + Legacy Survey DR10 + DESI EDR",
+        "r2": 0.94
+      },
+      {
+        "name": "AION-1-XL",
+        "input": "photometry+image",
+        "eval_dataset": "PROVABGS + Legacy Survey DR10 + DESI EDR",
+        "r2": 0.94
+      }
+    ],
+    "caveats": "Our probe regresses Galaxy10 DECaLS metadata redshifts (z mostly < 0.25) from images alone; AstroCLIP and AION use different cross-matched samples and, for AION, photometry inputs. The AstroCLIP image rows are the closest protocol match (image-only, kNN and MLP heads)."
+  },
+  "physical_properties": {
+    "task": "Galaxy physical property regression (pending: requires PROVABGS labels)",
+    "metric": "test R2",
+    "competitors": [
+      {
+        "name": "AION-1-B",
+        "input": "photometry+image",
+        "stellar_mass": 0.89,
+        "age": 0.45,
+        "metallicity": 0.49,
+        "ssfr_like": 0.64
+      },
+      {
+        "name": "AION-1-L",
+        "input": "photometry+image",
+        "stellar_mass": 0.89,
+        "age": 0.45,
+        "metallicity": 0.5,
+        "ssfr_like": 0.64
+      },
+      {
+        "name": "AION-1-XL",
+        "input": "photometry+image",
+        "stellar_mass": 0.89,
+        "age": 0.45,
+        "metallicity": 0.49,
+        "ssfr_like": 0.64
+      },
+      {
+        "name": "AstroCLIP Image, zero-shot",
+        "input": "image",
+        "stellar_mass": 0.74,
+        "age": 0.27,
+        "metallicity": 0.44,
+        "ssfr_like": 0.44
+      },
+      {
+        "name": "AstroCLIP Image, few-shot",
+        "input": "image",
+        "stellar_mass": 0.73,
+        "age": 0.26,
+        "metallicity": 0.43,
+        "ssfr_like": 0.42
+      },
+      {
+        "name": "AstroCLIP Spectrum, few-shot",
+        "input": "spectrum",
+        "stellar_mass": 0.88,
+        "age": 0.43,
+        "metallicity": 0.58,
+        "ssfr_like": 0.64
+      }
+    ],
+    "caveats": "No local eval exists yet; kept here so the comparison report shows the reference targets for the planned PROVABGS probe."
+  }
+}
