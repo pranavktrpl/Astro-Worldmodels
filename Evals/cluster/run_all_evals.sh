@@ -31,7 +31,16 @@ EOF
 
 CKPT_LARGE="$REPO_DIR/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_52000.pt"
 CKPT_SMALL="$REPO_DIR/checkpoints/VitSmallPatch14_2204/step_21000.pt"
-require() { [ -f "$1" ] || { echo "Missing checkpoint: $1 (or set MODELS in $ENV_FILE)"; exit 1; }; }
+link_ckpt() {
+    local src="$1" dst="$2"
+    [ -n "$src" ] || return 0
+    [ -f "$src" ] || { echo "Checkpoint source not found: $src"; exit 1; }
+    mkdir -p "$(dirname "$dst")"
+    [ -e "$dst" ] || ln -s "$src" "$dst"
+}
+link_ckpt "${CKPT_LARGE_SRC:-}" "$CKPT_LARGE"
+link_ckpt "${CKPT_SMALL_SRC:-}" "$CKPT_SMALL"
+require() { [ -f "$1" ] || { echo "Missing checkpoint: $1 (set CKPT_*_SRC or MODELS in $ENV_FILE)"; exit 1; }; }
 case "$MODELS" in
     all)   require "$CKPT_LARGE"; require "$CKPT_SMALL" ;;
     large) require "$CKPT_LARGE" ;;
