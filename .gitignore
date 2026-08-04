@@ -2,6 +2,8 @@
 .wandb-apiKey
 /checkpoints
 .env
+Evals/cluster/evals.env
+logs/cluster_evals/
 
 #model checkpoints
 *.pt
