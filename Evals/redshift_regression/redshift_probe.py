@@ -480,14 +480,24 @@ def plot_predictions(
         )
         ax.plot([0, limit], [0, limit], color="#d62728", linewidth=1, linestyle="--")
         metrics = regression_metrics(predictions[head], targets)
+        in_clip = targets < CLIPPED_Z_MAX
+        clipped_metrics = regression_metrics(
+            predictions[head][in_clip], targets[in_clip]
+        )
         ax.set_title(
-            f"{head}: R2={metrics['r2']:.3f}  NMAD={metrics['nmad']:.4f}"
+            f"{head}: R2={metrics['r2']:.3f} "
+            f"(z<{CLIPPED_Z_MAX:g}: {clipped_metrics['r2']:.3f})  "
+            f"NMAD={metrics['nmad']:.4f}"
         )
         ax.set_xlabel("Spectroscopic redshift")
         ax.set_ylabel("Predicted redshift")
         ax.set_xlim(0, limit)
         ax.set_ylim(0, limit)
-    fig.suptitle(f"Galaxy10 redshift regression, frozen {label} (seed 42 test split)")
+    fig.suptitle(
+        f"Galaxy10 redshift regression, frozen {label} "
+        "(seed 42 test split; axes cropped at 99.5th pct — full-sample R2 "
+        "includes out-of-frame outliers)"
+    )
     fig.tight_layout()
     fig.savefig(output_dir / "predicted_vs_true.png", dpi=200)
     plt.close(fig)
