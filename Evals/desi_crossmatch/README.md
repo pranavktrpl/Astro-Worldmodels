@@ -68,3 +68,21 @@ backbone.
 - The `spectra` in the same file are the natural input for the future
   spectra-backbone redshift probe (AstroCLIP spectrum encoder: R²=0.98) —
   same sample, same split, zero extra downloads.
+
+## Continued pretraining on this data
+
+First results (ViT-L ridge R²=0.53 vs AstroCLIP's 0.79) motivate a domain-
+adaptation experiment: continue LeJePA pretraining on the **train split only**
+of this dataset and re-run the probe. See `train-vision-continue.py` at the
+repo root and `configs/config_continue_astroclip.py`:
+
+```bash
+# edit configs/config_continue_astroclip.py (init_from, save_dir, bs), then:
+torchrun --standalone --nproc_per_node=4 train-vision-continue.py
+```
+
+The data source (`data/astroclip_crossmatch_source.py`) reads only
+`train-*.parquet` and applies the same dr2-RGB mapping as this probe, so the
+adapted backbone is trained and evaluated in one consistent domain. How much
+the probe R² moves is a direct measurement of the domain-coverage share of
+the gap.
