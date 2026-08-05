@@ -128,7 +128,14 @@ def main() -> None:
     amp_dtype, scaler = tv.build_amp(cfg)
 
     Path(cfg.save_dir).mkdir(parents=True, exist_ok=True)
-    wandb_run = None if tiny else tv.setup_wandb(cfg, rank)
+    wandb_run = None
+    if not tiny and os.environ.get("ASTRO_NO_WANDB") != "1":
+        try:
+            wandb_run = tv.setup_wandb(cfg, rank)
+        except Exception as error:  # auth/entity issues must not kill the run
+            if tv.is_main_process(rank):
+                print(f"wandb disabled ({type(error).__name__}: {error}); "
+                      "training continues without logging")
 
     global_step = 0
     for epoch in range(cfg.epochs):
