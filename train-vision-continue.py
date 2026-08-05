@@ -31,6 +31,12 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
+# Import pyarrow BEFORE torch: the pip torch wheel resolves the system
+# libstdc++, which can be older than what conda's pyarrow was built against
+# (GLIBCXX_3.4.31). Loading pyarrow first pulls in the conda env's newer
+# libstdc++, which torch is happy with; the reverse order crashes on import.
+import pyarrow.parquet  # noqa: F401
+
 import torch
 import torch.distributed as dist
 from torch.amp import autocast
