@@ -146,6 +146,17 @@ HEAD_CLASSES = {"aion_mlp": AionMLP, "astroclip_mlp": AstroclipMLP}
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", choices=[*MODELS, "all"], default="all")
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=None,
+        help="Evaluate this checkpoint instead of the --model presets.",
+    )
+    parser.add_argument(
+        "--label",
+        default=None,
+        help="Results directory name for --checkpoint (default: derived from its path).",
+    )
     parser.add_argument("--galaxy10-h5", type=Path, default=redshift_probe.DEFAULT_H5)
     parser.add_argument("--output-dir", type=Path, default=SCRIPT_DIR / "results")
     parser.add_argument("--input-size", type=int, default=140)
@@ -325,9 +336,8 @@ def summarize_repeats(repeats: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def evaluate_model(
-    key: str, args: argparse.Namespace, device: torch.device
+    spec: dict[str, Any], args: argparse.Namespace, device: torch.device
 ) -> dict[str, Any]:
-    spec = MODELS[key]
     started = time.time()
     output_dir = args.output_dir.resolve() / spec["label"]
     embeddings, embed_meta = load_embeddings(spec, args, device)
@@ -374,9 +384,16 @@ def evaluate_model(
 def main() -> None:
     args = parse_args()
     device = torch.device(args.device)
-    keys = list(MODELS) if args.model == "all" else [args.model]
-    for key in keys:
-        result = evaluate_model(key, args, device)
+    if args.checkpoint is not None:
+        label = args.label or "_".join(
+            [args.checkpoint.resolve().parent.name, args.checkpoint.stem]
+        )
+        specs = [{"label": label, "checkpoint": args.checkpoint}]
+    else:
+        keys = list(MODELS) if args.model == "all" else [args.model]
+        specs = [MODELS[key] for key in keys]
+    for spec in specs:
+        result = evaluate_model(spec, args, device)
         for head in HEAD_CLASSES:
             stats = result["summary"][head]["test"]
             print(
