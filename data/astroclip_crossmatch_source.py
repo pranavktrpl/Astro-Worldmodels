@@ -109,6 +109,11 @@ class AstroclipCrossmatchImages(torch.utils.data.IterableDataset):
                 batch_size=self.read_batch, columns=["image"]
             ):
                 column = batch.column("image")
+                # If `datasets` has been imported anywhere in the process, its
+                # registered Array3D extension type wraps the column in an
+                # ArrayExtensionArray with no .flatten(); unwrap to storage.
+                if hasattr(column, "storage"):
+                    column = column.storage
                 flat = column.flatten().flatten().flatten().to_numpy(
                     zero_copy_only=False
                 )

@@ -139,6 +139,10 @@ def iter_image_batches(files: list[Path], batch_size: int):
             batch_size=batch_size, columns=["image"]
         ):
             column = batch.column("image")
+            # Unwrap the HF Array3D extension array if `datasets` is imported
+            # in this process (its registered type has no .flatten()).
+            if hasattr(column, "storage"):
+                column = column.storage
             flat = column.flatten().flatten().flatten().to_numpy(
                 zero_copy_only=False
             )
