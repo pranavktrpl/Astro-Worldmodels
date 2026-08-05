@@ -25,6 +25,7 @@ re-run Evals/desi_crossmatch/astroclip_redshift_probe.py against it to
 measure how much of the domain gap closed.
 """
 
+import argparse
 import importlib.util
 import os
 import sys
@@ -64,11 +65,42 @@ from data.astroclip_crossmatch_source import (  # noqa: E402
 )
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Override config_continue_astroclip.py per run."
+    )
+    parser.add_argument("--init-from", default=None, help="Checkpoint to adapt.")
+    parser.add_argument(
+        "--save-dir",
+        default=None,
+        help="Checkpoint output dir (default: derived from --init-from's family).",
+    )
+    parser.add_argument("--run-name", default=None, help="wandb run name.")
+    parser.add_argument("--bs", type=int, default=None)
+    parser.add_argument("--lr", type=float, default=None)
+    parser.add_argument("--epochs", type=int, default=None)
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = parse_args()
     world_size, rank, local_rank, device = tv.setup_ddp()
     tv.seed_everything(seed=42, rank=rank)
 
     cfg = ContinueAstroclipConfig()
+    if args.init_from is not None:
+        cfg.init_from = args.init_from
+        family = Path(args.init_from).resolve().parent.name
+        cfg.save_dir = f"./checkpoints/ContinuePretrain_AstroclipXmatch_{family}"
+        cfg.run_name = f"ContinuePretrain_AstroclipXmatch_{family}"
+    if args.save_dir is not None:
+        cfg.save_dir = args.save_dir
+    if args.run_name is not None:
+        cfg.run_name = args.run_name
+    for name in ("bs", "lr", "epochs"):
+        value = getattr(args, name)
+        if value is not None:
+            setattr(cfg, name, value)
 
     checkpoint = torch.load(cfg.init_from, map_location="cpu", weights_only=False)
     base_cfg = dict(checkpoint.get("cfg") or {})
