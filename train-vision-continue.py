@@ -90,7 +90,12 @@ def main() -> None:
     cfg = ContinueAstroclipConfig()
     if args.init_from is not None:
         cfg.init_from = args.init_from
-        family = Path(args.init_from).resolve().parent.name
+        init_path = Path(args.init_from).resolve()
+        # family-subdir layout -> use the family name; flat file directly in
+        # checkpoints/ -> use the filename stem instead
+        family = init_path.parent.name
+        if family == "checkpoints":
+            family = init_path.stem
         cfg.save_dir = f"./checkpoints/ContinuePretrain_AstroclipXmatch_{family}"
         cfg.run_name = f"ContinuePretrain_AstroclipXmatch_{family}"
     if args.save_dir is not None:
