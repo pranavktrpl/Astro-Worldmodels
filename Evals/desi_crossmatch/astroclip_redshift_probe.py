@@ -89,6 +89,17 @@ def dr2_rgb_batch(batch: np.ndarray) -> np.ndarray:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", choices=[*rp.MODELS, "all"], default="all")
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=None,
+        help="Evaluate this checkpoint instead of the --model presets.",
+    )
+    parser.add_argument(
+        "--label",
+        default=None,
+        help="Results directory name for --checkpoint (default: derived from its path).",
+    )
     parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
     parser.add_argument("--output-dir", type=Path, default=SCRIPT_DIR / "results")
     parser.add_argument("--input-size", type=int, default=140)
@@ -313,9 +324,8 @@ def summarize(repeats: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def evaluate_model(
-    key: str, args: argparse.Namespace, device: torch.device
+    spec: dict[str, Any], args: argparse.Namespace, device: torch.device
 ) -> dict[str, Any]:
-    spec = rp.MODELS[key]
     started = time.time()
     output_dir = args.output_dir.resolve() / spec["label"]
     embeddings, embed_meta = cached_embeddings(spec, args, device)
@@ -374,9 +384,16 @@ def evaluate_model(
 def main() -> None:
     args = parse_args()
     device = torch.device(args.device)
-    keys = list(rp.MODELS) if args.model == "all" else [args.model]
-    for key in keys:
-        result = evaluate_model(key, args, device)
+    if args.checkpoint is not None:
+        label = args.label or "_".join(
+            [args.checkpoint.resolve().parent.name, args.checkpoint.stem]
+        )
+        specs = [{"label": label, "checkpoint": args.checkpoint}]
+    else:
+        keys = list(rp.MODELS) if args.model == "all" else [args.model]
+        specs = [rp.MODELS[key] for key in keys]
+    for spec in specs:
+        result = evaluate_model(spec, args, device)
         for head in ("ridge", "knn", "mlp"):
             stats = result["summary"][head]["test"]["r2"]
             print(
