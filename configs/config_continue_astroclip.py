@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -48,9 +49,14 @@ class ContinueAstroclipConfig:
     amp_dtype: str = "bf16"
     pretrained_backbone: bool = False  # weights come from init_from
 
-    # logging / checkpointing
-    entity: str = "pranavktrpl-personal"
-    project: str = "astrojepa"
+    # logging / checkpointing — entity/project come from .env (see
+    # .env.example); an unset entity logs to the API key's default entity
+    entity: str | None = field(
+        default_factory=lambda: os.environ.get("WANDB_ENTITY") or None
+    )
+    project: str = field(
+        default_factory=lambda: os.environ.get("WANDB_PROJECT", "astrojepa")
+    )
     run_name: str = "ContinuePretrain_AstroclipXmatch"
     wandb_run_id: str | None = None
     wandb_resume: str = "allow"
