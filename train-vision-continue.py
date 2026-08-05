@@ -16,6 +16,10 @@ Launch (edit configs/config_continue_astroclip.py first):
 
     torchrun --standalone --nproc_per_node=4 train-vision-continue.py
 
+Smoke test (1 epoch of 5 steps, checkpoint at step 5, no wandb):
+
+    ASTRO_TINY=1 torchrun --standalone --nproc_per_node=1 train-vision-continue.py
+
 Afterwards, select a checkpoint with Evals/checkpoint_loss_curves, then
 re-run Evals/desi_crossmatch/astroclip_redshift_probe.py against it to
 measure how much of the domain gap closed.
@@ -67,9 +71,20 @@ def main() -> None:
 
     rows = count_train_rows(cfg.data_dir)
     cfg.steps_per_epoch = max(1, int(rows * 0.9) // (cfg.bs * world_size))
+
+    tiny = os.environ.get("ASTRO_TINY") == "1"
+    if tiny:
+        cfg.epochs = 1
+        cfg.steps_per_epoch = min(5, cfg.steps_per_epoch)
+        cfg.ckpt_every = 5
+        cfg.warmup_steps = 2
+        cfg.save_dir = cfg.save_dir.rstrip("/") + "_tiny"
+        cfg.wandb_run_id = None
     cfg.total_steps = cfg.epochs * cfg.steps_per_epoch
 
     if tv.is_main_process(rank):
+        if tiny:
+            print("ASTRO_TINY=1: 1 epoch x", cfg.steps_per_epoch, "steps, no wandb")
         print(f"continuing from {cfg.init_from} ({cfg.model_name})")
         print(
             f"{rows} train images, steps_per_epoch={cfg.steps_per_epoch}, "
@@ -107,7 +122,7 @@ def main() -> None:
     amp_dtype, scaler = tv.build_amp(cfg)
 
     Path(cfg.save_dir).mkdir(parents=True, exist_ok=True)
-    wandb_run = tv.setup_wandb(cfg, rank)
+    wandb_run = None if tiny else tv.setup_wandb(cfg, rank)
 
     global_step = 0
     for epoch in range(cfg.epochs):
