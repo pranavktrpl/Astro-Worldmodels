@@ -48,9 +48,22 @@ QUESTIONS = {
 
 
 class MLP(nn.Module):
-    """AstroCLIP morphology MLP: 3 hidden layers plus output layer."""
+    """AstroCLIP morphology MLP: 3 hidden layers plus output layer.
 
-    def __init__(self, input_dim: int, num_classes: int, hidden_dim: int, dropout_rate: float):
+    apply_softmax=True reproduces the AstroCLIP code (softmax inside forward,
+    then CrossEntropyLoss re-softmaxes — the double-softmax collapses training
+    to majority-class prediction on imbalanced questions). apply_softmax=False
+    is the fixed-head protocol: raw logits into the loss.
+    """
+
+    def __init__(
+        self,
+        input_dim: int,
+        num_classes: int,
+        hidden_dim: int,
+        dropout_rate: float,
+        apply_softmax: bool = True,
+    ):
         super().__init__()
         self.layers = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -64,10 +77,12 @@ class MLP(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim, num_classes),
         )
+        self.apply_softmax = apply_softmax
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.softmax(self.layers(x))
+        logits = self.layers(x)
+        return self.softmax(logits) if self.apply_softmax else logits
 
 
 def normalize_targets(y: torch.Tensor) -> torch.Tensor:
@@ -92,10 +107,19 @@ def train_eval_on_question(
     dropout: float,
     seed: int,
     device: torch.device,
+    fixed_head: bool = False,
 ) -> dict[str, Any]:
     torch.manual_seed(seed)
     if device.type == "cuda":
         torch.cuda.manual_seed_all(seed)
+
+    if fixed_head:
+        # inverse-frequency class weights from the soft targets, mean 1
+        class_frequency = y_train.mean(dim=0).clamp_min(1e-3)
+        class_weights = (1.0 / class_frequency)
+        class_weights = (class_weights / class_weights.mean()).to(device)
+    else:
+        class_weights = None
 
     x_train, x_val, y_train, y_val = train_test_split(
         x_train,
@@ -115,8 +139,14 @@ def train_eval_on_question(
     )
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    mlp = MLP(x_train.shape[1], y_train.shape[1], hidden_dim, dropout).to(device)
-    criterion = nn.CrossEntropyLoss()
+    mlp = MLP(
+        x_train.shape[1],
+        y_train.shape[1],
+        hidden_dim,
+        dropout,
+        apply_softmax=not fixed_head,
+    ).to(device)
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = optim.Adam(mlp.parameters(), lr=lr)
     best_val_loss = float("inf")
     best_model = None
@@ -241,6 +271,12 @@ def main() -> None:
         help="Results directory name under results/ to train on (overrides "
         "--model; must contain embeddings from extract_embeddings.py).",
     )
+    parser.add_argument(
+        "--fixed-head",
+        action="store_true",
+        help="CE on logits with inverse-frequency class weights instead of "
+        "the AstroCLIP double-softmax; writes *_fixedhead output files.",
+    )
     parser.add_argument("--hidden-dim", type=int, default=256)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1e-3)
@@ -290,6 +326,7 @@ def main() -> None:
             dropout=args.dropout,
             seed=args.seed,
             device=device,
+            fixed_head=args.fixed_head,
         )
         result.update(
             {
@@ -313,7 +350,11 @@ def main() -> None:
     }
     metadata = {
         "model": label,
-        "protocol": "AstroCLIP morphology MLP reimplementation",
+        "protocol": (
+            "fixed head: CE on logits with inverse-frequency class weights"
+            if args.fixed_head
+            else "AstroCLIP morphology MLP reimplementation"
+        ),
         "mlp": {
             "hidden_dim": args.hidden_dim,
             "dropout": args.dropout,
@@ -321,7 +362,12 @@ def main() -> None:
             "epochs": args.epochs,
             "batch_size": args.batch_size,
             "optimizer": "Adam",
-            "loss": "CrossEntropyLoss on soft debiased targets after model softmax, matching AstroCLIP code",
+            "loss": (
+                "CrossEntropyLoss on logits with inverse-frequency class "
+                "weights (fixes the AstroCLIP double-softmax collapse)"
+                if args.fixed_head
+                else "CrossEntropyLoss on soft debiased targets after model softmax, matching AstroCLIP code"
+            ),
         },
         "filters": {
             "global": "smooth-or-featured_total-votes >= 3 applied in prepare_gzd5.py",
@@ -329,11 +375,12 @@ def main() -> None:
             "test": "valid non-NaN target rows and question_total-votes > 34",
         },
     }
+    suffix = "_fixedhead" if args.fixed_head else ""
     payload = {"metadata": metadata, "metrics": metrics}
-    (output_dir / "metrics.json").write_text(json.dumps(payload, indent=2) + "\n")
-    write_csv(output_dir / "metrics.csv", metrics)
-    make_radar(metrics, "Accuracy", output_dir / "radar_accuracy.png")
-    make_radar(metrics, "F1 Score", output_dir / "radar_f1.png")
+    (output_dir / f"metrics{suffix}.json").write_text(json.dumps(payload, indent=2) + "\n")
+    write_csv(output_dir / f"metrics{suffix}.csv", metrics)
+    make_radar(metrics, "Accuracy", output_dir / f"radar_accuracy{suffix}.png")
+    make_radar(metrics, "F1 Score", output_dir / f"radar_f1{suffix}.png")
     print(json.dumps(metrics["mean"], indent=2))
 
 

@@ -48,6 +48,10 @@ Evals/gzd5_morphology_probe/results/**
 !Evals/gzd5_morphology_probe/results/*/
 !Evals/gzd5_morphology_probe/results/*/metrics.csv
 !Evals/gzd5_morphology_probe/results/*/metrics.json
+!Evals/gzd5_morphology_probe/results/*/metrics_fixedhead.csv
+!Evals/gzd5_morphology_probe/results/*/metrics_fixedhead.json
+!Evals/gzd5_morphology_probe/results/*/radar_accuracy_fixedhead.png
+!Evals/gzd5_morphology_probe/results/*/radar_f1_fixedhead.png
 !Evals/gzd5_morphology_probe/results/*/embedding_metadata.json
 !Evals/gzd5_morphology_probe/results/*/radar_accuracy.png
 !Evals/gzd5_morphology_probe/results/*/radar_f1.png
