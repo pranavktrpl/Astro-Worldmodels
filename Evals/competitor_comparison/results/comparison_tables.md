@@ -21,19 +21,19 @@ Caveats: AION evaluates on a Galaxy Zoo 10 / Legacy Survey DR10 cross-match (~8k
 
 ## GZD-5 question-wise morphology
 
-| Question | Ours ViT-L/14 (step 52000) acc / F1 | AstroCLIP Image ViT-L (published) acc / F1 |
-|---|---:|---:|
-| smooth | 0.774 / 0.676 | 0.83 / 0.83 |
-| disk-edge-on | 0.885 / 0.830 | 0.97 / 0.97 |
-| spiral-arms | 0.935 / 0.946 | 0.92 / 0.94 |
-| bar | 0.538 / 0.376 | 0.56 / 0.54 |
-| bulge-size | 0.776 / 0.762 | 0.79 / 0.78 |
-| how-rounded | 0.825 / 0.825 | 0.74 / 0.74 |
-| edge-on-bulge | 0.800 / 0.711 | 0.82 / 0.81 |
-| spiral-winding | 0.752 / 0.646 | 0.74 / 0.68 |
-| spiral-arm-count | 0.422 / 0.386 | 0.44 / 0.41 |
-| merging | 0.814 / 0.731 | 0.80 / 0.73 |
-| **mean** | 0.752 / 0.689 | 0.761 / 0.743 |
+| Question | Ours ViT-L/14 (step 52000) acc / F1 | Ours ViT-S/14 (step 21000) acc / F1 | Ours ViT-L/14 adapted (xmatch) acc / F1 | Ours ViT-S/14 adapted (xmatch) acc / F1 | AstroCLIP Image ViT-L (published) acc / F1 |
+|---|---:|---:|---:|---:|---:|
+| smooth | 0.774 / 0.676 | 0.774 / 0.676 | 0.774 / 0.676 | 0.774 / 0.676 | 0.83 / 0.83 |
+| disk-edge-on | 0.885 / 0.830 | 0.885 / 0.830 | 0.885 / 0.830 | 0.885 / 0.830 | 0.97 / 0.97 |
+| spiral-arms | 0.935 / 0.946 | 0.924 / 0.940 | 0.936 / 0.945 | 0.925 / 0.939 | 0.92 / 0.94 |
+| bar | 0.538 / 0.376 | 0.538 / 0.376 | 0.538 / 0.376 | 0.538 / 0.376 | 0.56 / 0.54 |
+| bulge-size | 0.776 / 0.762 | 0.773 / 0.760 | 0.769 / 0.758 | 0.777 / 0.774 | 0.79 / 0.78 |
+| how-rounded | 0.825 / 0.825 | 0.718 / 0.716 | 0.845 / 0.844 | 0.766 / 0.763 | 0.74 / 0.74 |
+| edge-on-bulge | 0.800 / 0.711 | 0.800 / 0.711 | 0.800 / 0.711 | 0.800 / 0.711 | 0.82 / 0.81 |
+| spiral-winding | 0.752 / 0.646 | 0.752 / 0.646 | 0.752 / 0.646 | 0.752 / 0.646 | 0.74 / 0.68 |
+| spiral-arm-count | 0.422 / 0.386 | 0.404 / 0.370 | 0.499 / 0.433 | 0.476 / 0.408 | 0.44 / 0.41 |
+| merging | 0.814 / 0.731 | 0.814 / 0.731 | 0.814 / 0.731 | 0.814 / 0.731 | 0.80 / 0.73 |
+| **mean** | 0.752 / 0.689 | 0.738 / 0.676 | 0.761 / 0.695 | 0.751 / 0.686 | 0.761 / 0.743 |
 
 Caveats: Same question set and debiased-label protocol as our gzd5_morphology_probe, so this is the closest to a like-for-like comparison we have.
 
