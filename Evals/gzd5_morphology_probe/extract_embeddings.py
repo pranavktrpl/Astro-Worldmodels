@@ -144,13 +144,30 @@ def extract_split(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", choices=MODELS.keys(), default="large")
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=None,
+        help="Embed with this checkpoint instead of the --model presets.",
+    )
+    parser.add_argument(
+        "--label",
+        default=None,
+        help="Results directory name for --checkpoint (default: derived from its path).",
+    )
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--image-size", type=int, default=140)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
-    spec = MODELS[args.model]
+    if args.checkpoint is not None:
+        label = args.label or "_".join(
+            [args.checkpoint.resolve().parent.name, args.checkpoint.stem]
+        )
+        spec = {"label": label, "checkpoint": args.checkpoint}
+    else:
+        spec = MODELS[args.model]
     output_dir = RESULTS_DIR / spec["label"]
     train = pd.read_parquet(DATA_DIR / "merged_train.parquet")
     test = pd.read_parquet(DATA_DIR / "merged_test.parquet")

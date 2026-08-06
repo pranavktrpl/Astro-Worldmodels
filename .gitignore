@@ -45,13 +45,13 @@ Evals/gzd5_morphology_probe/trash/
 # GZD-5 generated embeddings are large; keep only compact summaries/figures.
 Evals/gzd5_morphology_probe/results/**
 !Evals/gzd5_morphology_probe/results/
-!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/
-!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/metrics.csv
-!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/metrics.json
-!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/embedding_metadata.json
-!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/radar_accuracy.png
-!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/radar_f1.png
-!Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/astroclip_vs_ours_gzd5_radar.png
+!Evals/gzd5_morphology_probe/results/*/
+!Evals/gzd5_morphology_probe/results/*/metrics.csv
+!Evals/gzd5_morphology_probe/results/*/metrics.json
+!Evals/gzd5_morphology_probe/results/*/embedding_metadata.json
+!Evals/gzd5_morphology_probe/results/*/radar_accuracy.png
+!Evals/gzd5_morphology_probe/results/*/radar_f1.png
+!Evals/gzd5_morphology_probe/results/*/astroclip_vs_ours_gzd5_radar.png
 
 # Patch/attention diagnostics: keep scripts plus representative summary outputs,
 # skip arrays, copied reference assets, raw images, and per-layer image dumps.

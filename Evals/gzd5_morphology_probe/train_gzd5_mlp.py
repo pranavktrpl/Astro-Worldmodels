@@ -235,6 +235,12 @@ def write_csv(path: Path, metrics: dict[str, Any]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", choices=MODELS.keys(), default="large")
+    parser.add_argument(
+        "--label",
+        default=None,
+        help="Results directory name under results/ to train on (overrides "
+        "--model; must contain embeddings from extract_embeddings.py).",
+    )
     parser.add_argument("--hidden-dim", type=int, default=256)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1e-3)
@@ -244,8 +250,13 @@ def main() -> None:
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
-    label = MODELS[args.model]
+    label = args.label or MODELS[args.model]
     output_dir = RESULTS_DIR / label
+    if not (output_dir / "train_embeddings.npy").exists():
+        raise SystemExit(
+            f"No embeddings under {output_dir} — run extract_embeddings.py "
+            "with the matching --label first."
+        )
     x_train = torch.from_numpy(np.load(output_dir / "train_embeddings.npy")).float()
     x_test = torch.from_numpy(np.load(output_dir / "test_embeddings.npy")).float()
     train = pd.read_parquet(DATA_DIR / "merged_train.parquet")
