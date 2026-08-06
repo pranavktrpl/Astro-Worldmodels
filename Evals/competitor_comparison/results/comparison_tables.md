@@ -47,6 +47,18 @@ Caveats: Same question set and debiased-label protocol as our gzd5_morphology_pr
 | Ours ViT-S/14 (step 21000) | ridge on frozen image embeddings | Galaxy10 DECaLS | 0.5648 ± 0.1638 | 0.6740 ± 0.0196 | local |
 | Ours ViT-S/14 (step 21000) | knn on frozen image embeddings | Galaxy10 DECaLS | 0.5046 ± 0.1405 | 0.5973 ± 0.0189 | local |
 | Ours ViT-S/14 (step 21000) | mlp on frozen image embeddings | Galaxy10 DECaLS | 0.5773 ± 0.1712 | 0.6863 ± 0.0255 | local |
+| Ours ViT-L/14 adapted (xmatch) | ridge on frozen image embeddings | Galaxy10 DECaLS | 0.6284 ± 0.1805 | 0.7482 ± 0.0152 | local |
+| Ours ViT-L/14 adapted (xmatch) | knn on frozen image embeddings | Galaxy10 DECaLS | 0.5611 ± 0.1600 | 0.6680 ± 0.0166 | local |
+| Ours ViT-L/14 adapted (xmatch) | mlp on frozen image embeddings | Galaxy10 DECaLS | 0.6194 ± 0.1778 | 0.7383 ± 0.0246 | local |
+| Ours ViT-S/14 adapted (xmatch) | ridge on frozen image embeddings | Galaxy10 DECaLS | 0.5768 ± 0.1679 | 0.6876 ± 0.0175 | local |
+| Ours ViT-S/14 adapted (xmatch) | knn on frozen image embeddings | Galaxy10 DECaLS | 0.5196 ± 0.1504 | 0.6173 ± 0.0177 | local |
+| Ours ViT-S/14 adapted (xmatch) | mlp on frozen image embeddings | Galaxy10 DECaLS | 0.5742 ± 0.1634 | 0.6838 ± 0.0270 | local |
+| Ours ViT-L/14 adapted (xmatch) | ridge on frozen image embeddings | AstroCLIP sample | 0.5506 ± 0.0002 | n/a | local |
+| Ours ViT-L/14 adapted (xmatch) | knn on frozen image embeddings | AstroCLIP sample | 0.5161 ± 0.0005 | n/a | local |
+| Ours ViT-L/14 adapted (xmatch) | mlp on frozen image embeddings | AstroCLIP sample | 0.5538 ± 0.0046 | n/a | local |
+| Ours ViT-S/14 adapted (xmatch) | ridge on frozen image embeddings | AstroCLIP sample | 0.5224 ± 0.0006 | n/a | local |
+| Ours ViT-S/14 adapted (xmatch) | knn on frozen image embeddings | AstroCLIP sample | 0.4981 ± 0.0002 | n/a | local |
+| Ours ViT-S/14 adapted (xmatch) | mlp on frozen image embeddings | AstroCLIP sample | 0.5277 ± 0.0024 | n/a | local |
 | AstroCLIP Image, zero-shot kNN | image | DESI-LS images cross-matched with DESI spectra | 0.79 | n/r | published |
 | AstroCLIP Image, few-shot MLP | image | DESI-LS images cross-matched with DESI spectra | 0.78 | n/r | published |
 | AstroCLIP Spectrum, few-shot MLP | spectrum | DESI-LS images cross-matched with DESI spectra | 0.98 | n/r | published |

@@ -57,10 +57,15 @@ FAMILY_LABELS = {
 MODEL_LABELS = {
     "astro_vit_large_step_52000": "Ours ViT-L/14 (step 52000)",
     "astro_vit_small_step_21000": "Ours ViT-S/14 (step 21000)",
+    "vit_large_adapted_xmatch": "Ours ViT-L/14 adapted (xmatch)",
+    "vit_small_adapted_xmatch": "Ours ViT-S/14 adapted (xmatch)",
 }
+OURS_YELLOW = "#eda100"
 MODEL_COLORS = {
     "astro_vit_large_step_52000": OURS_BLUE,
     "astro_vit_small_step_21000": OURS_ORANGE,
+    "vit_large_adapted_xmatch": OURS_AQUA,
+    "vit_small_adapted_xmatch": OURS_YELLOW,
 }
 GZD5_QUESTIONS = [
     "smooth",
