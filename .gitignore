@@ -5,6 +5,7 @@
 Evals/cluster/evals.env
 logs/cluster_evals/
 Evals/desi_crossmatch/data/
+Evals/*/results/*/embeddings.npy
 
 #model checkpoints
 *.pt
