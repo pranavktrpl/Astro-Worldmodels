@@ -14,6 +14,7 @@ for dir in "$SCRIPT_DIR"/results/*/; do
         echo "skip $label (no embeddings)"
         continue
     fi
-    echo "=== $label (fixed head) ==="
-    python "$SCRIPT_DIR/train_gzd5_mlp.py" --label "$label" --fixed-head
+    echo "=== $label (fixed head, 5 seeds) ==="
+    python "$SCRIPT_DIR/train_gzd5_mlp.py" --label "$label" --fixed-head \
+        --seeds 42 43 44 45 46
 done

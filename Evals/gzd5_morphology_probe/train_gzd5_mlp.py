@@ -282,7 +282,13 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--epochs", type=int, default=25)
     parser.add_argument("--dropout", type=float, default=0.2)
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=[42],
+        help="Head-training seeds; metrics report mean over seeds with std.",
+    )
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
@@ -314,20 +320,38 @@ def main() -> None:
         y_test_q = normalize_targets(y_test[test_mask])
         x_train_q = x_train[train_mask]
         x_test_q = x_test[test_mask]
-        result = train_eval_on_question(
-            x_train_q,
-            x_test_q,
-            y_train_q,
-            y_test_q,
-            hidden_dim=args.hidden_dim,
-            batch_size=args.batch_size,
-            lr=args.lr,
-            epochs=args.epochs,
-            dropout=args.dropout,
-            seed=args.seed,
-            device=device,
-            fixed_head=args.fixed_head,
-        )
+        per_seed = [
+            train_eval_on_question(
+                x_train_q,
+                x_test_q,
+                y_train_q,
+                y_test_q,
+                hidden_dim=args.hidden_dim,
+                batch_size=args.batch_size,
+                lr=args.lr,
+                epochs=args.epochs,
+                dropout=args.dropout,
+                seed=seed,
+                device=device,
+                fixed_head=args.fixed_head,
+            )
+            for seed in args.seeds
+        ]
+        # aggregate over seeds; keep the first seed's history and the
+        # scalar keys the CSV/plots/comparison expect (now seed means)
+        result = {
+            "Accuracy": float(np.mean([r["Accuracy"] for r in per_seed])),
+            "F1 Score": float(np.mean([r["F1 Score"] for r in per_seed])),
+            "Accuracy_std": float(np.std([r["Accuracy"] for r in per_seed])),
+            "F1 Score_std": float(np.std([r["F1 Score"] for r in per_seed])),
+            "best_val_loss": float(np.mean([r["best_val_loss"] for r in per_seed])),
+            "seeds": list(args.seeds),
+            "per_seed": [
+                {"Accuracy": r["Accuracy"], "F1 Score": r["F1 Score"]}
+                for r in per_seed
+            ],
+            "history": per_seed[0]["history"],
+        }
         result.update(
             {
                 "question": question,
@@ -347,6 +371,8 @@ def main() -> None:
     metrics["mean"] = {
         "Accuracy": float(np.mean([metrics[q]["Accuracy"] for q in QUESTIONS])),
         "F1 Score": float(np.mean([metrics[q]["F1 Score"] for q in QUESTIONS])),
+        "Accuracy_std": float(np.mean([metrics[q]["Accuracy_std"] for q in QUESTIONS])),
+        "F1 Score_std": float(np.mean([metrics[q]["F1 Score_std"] for q in QUESTIONS])),
     }
     metadata = {
         "model": label,
@@ -361,6 +387,7 @@ def main() -> None:
             "lr": args.lr,
             "epochs": args.epochs,
             "batch_size": args.batch_size,
+            "seeds": list(args.seeds),
             "optimizer": "Adam",
             "loss": (
                 "CrossEntropyLoss on logits with inverse-frequency class "
