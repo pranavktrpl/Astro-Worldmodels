@@ -1,5 +1,5 @@
 {
-  "checkpoint": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_52000.pt",
+  "checkpoint": "/mnt/ssd-cluster/maja/Astro-Worldmodels/checkpoints/ViTLarge_52000.pt",
   "global_step": 52000,
   "cfg": {
     "sigreg_num_points": 17,
@@ -44,7 +44,7 @@
   "train_rows": 179519,
   "test_rows": 44896,
   "embedding_files": {
-    "train": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/train_embeddings.npy",
-    "test": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/test_embeddings.npy"
+    "train": "/mnt/ssd-cluster/maja/Astro-Worldmodels/Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/train_embeddings.npy",
+    "test": "/mnt/ssd-cluster/maja/Astro-Worldmodels/Evals/gzd5_morphology_probe/results/astro_vit_large_step_52000/test_embeddings.npy"
   }
 }
