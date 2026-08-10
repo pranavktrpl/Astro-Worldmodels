@@ -1,0 +1,9 @@
+{
+  "checkpoint": "/mnt/ssd-cluster/maja/Astro-Worldmodels/checkpoints/ContinuePretrain_AstroclipXmatch/complete.pt",
+  "embedding_dim": 384,
+  "galaxy10_h5": "/mnt/datasets/galaxy10/Galaxy10_DECals.h5",
+  "global_step": 3240,
+  "input_size": 140,
+  "model_name": "vit_small_patch14_dinov2.lvd142m",
+  "preprocessing": "bicubic_resize_to_tensor_0_1_no_normalization"
+}

@@ -1,0 +1,10 @@
+{
+  "checkpoint": "/mnt/ssd-cluster/maja/Astro-Worldmodels/checkpoints/spectra.pt",
+  "embedding_dim": 768,
+  "global_step": 15647,
+  "model_name": "desi_utbd_spectrum_transformer",
+  "pooling": "cls",
+  "preprocessing": "raw_flux_full_patchify_no_crop",
+  "source": "/mnt/ssd-cluster/maja/Astro-Worldmodels/Evals/desi_crossmatch/data/astroclip",
+  "split": "AstroCLIP train/test splits as shipped in the dataset"
+}

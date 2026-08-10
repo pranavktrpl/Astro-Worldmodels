@@ -371,9 +371,52 @@
     }
   },
   "physical_properties": {
-    "ours": [],
+    "ours": [
+      {
+        "age": 0.18465508661839522,
+        "age_std": 0.001157113925815701,
+        "head": "ridge",
+        "input": "spectrum",
+        "label": "checkpoints_spectra",
+        "metallicity": 0.23458399224317084,
+        "metallicity_std": 0.0008465563851218691,
+        "name": "Ours spectra (checkpoints_spectra)",
+        "ssfr": 0.5101999215846066,
+        "ssfr_std": 0.0004939355165978009,
+        "stellar_mass": 0.5060163136924439,
+        "stellar_mass_std": 0.0006815581482626481
+      },
+      {
+        "age": 0.0988964960348373,
+        "age_std": 0.0006461993647821599,
+        "head": "knn",
+        "input": "spectrum",
+        "label": "checkpoints_spectra",
+        "metallicity": 0.04973318631119009,
+        "metallicity_std": 0.00024331928835662583,
+        "name": "Ours spectra (checkpoints_spectra)",
+        "ssfr": 0.2687686775465513,
+        "ssfr_std": 0.00060290933253926,
+        "stellar_mass": 0.13345980745639474,
+        "stellar_mass_std": 7.372499875006431e-05
+      },
+      {
+        "age": 0.15044016684174896,
+        "age_std": 0.00035372386674671267,
+        "head": "mlp",
+        "input": "spectrum",
+        "label": "checkpoints_spectra",
+        "metallicity": 0.20873270999505975,
+        "metallicity_std": 0.001927951481243028,
+        "name": "Ours spectra (checkpoints_spectra)",
+        "ssfr": 0.4915224010423347,
+        "ssfr_std": 0.0008304115971388214,
+        "stellar_mass": 0.4489928511654144,
+        "stellar_mass_std": 0.006197047148717278
+      }
+    ],
     "published": {
-      "caveats": "No local eval exists yet; kept here so the comparison report shows the reference targets for the planned PROVABGS probe.",
+      "caveats": "Our probe regresses PROVABGS properties from frozen spectrum embeddings on the AstroCLIP cross-match split (catalog joined by targetid), so the AstroCLIP Spectrum rows are the closest protocol match; the AION rows use photometry+image inputs on a different sample, and sSFR-like maps our log sSFR to AION's SFR-flavored target.",
       "competitors": [
         {
           "age": 0.45,
@@ -418,6 +461,14 @@
         {
           "age": 0.43,
           "input": "spectrum",
+          "metallicity": 0.57,
+          "name": "AstroCLIP Spectrum, zero-shot",
+          "ssfr_like": 0.63,
+          "stellar_mass": 0.87
+        },
+        {
+          "age": 0.43,
+          "input": "spectrum",
           "metallicity": 0.58,
           "name": "AstroCLIP Spectrum, few-shot",
           "ssfr_like": 0.64,
@@ -425,7 +476,7 @@
         }
       ],
       "metric": "test R2",
-      "task": "Galaxy physical property regression (pending: requires PROVABGS labels)"
+      "task": "Galaxy physical property regression (PROVABGS labels on the AstroCLIP cross-match)"
     }
   },
   "redshift_regression": {
@@ -744,6 +795,54 @@
       },
       {
         "head": "ridge",
+        "label": "astro_vit_large_step_52000",
+        "name": "Ours ViT-L/14 (step 52000)",
+        "sample": "AstroCLIP sample",
+        "test_r2": 0.530119664872022,
+        "test_r2_std": 0.00022064479129014968
+      },
+      {
+        "head": "knn",
+        "label": "astro_vit_large_step_52000",
+        "name": "Ours ViT-L/14 (step 52000)",
+        "sample": "AstroCLIP sample",
+        "test_r2": 0.4936198339998201,
+        "test_r2_std": 0.00021248447626127383
+      },
+      {
+        "head": "mlp",
+        "label": "astro_vit_large_step_52000",
+        "name": "Ours ViT-L/14 (step 52000)",
+        "sample": "AstroCLIP sample",
+        "test_r2": 0.5423750988675676,
+        "test_r2_std": 0.0008193392462590779
+      },
+      {
+        "head": "ridge",
+        "label": "astro_vit_small_step_21000",
+        "name": "Ours ViT-S/14 (step 21000)",
+        "sample": "AstroCLIP sample",
+        "test_r2": 0.502062550312294,
+        "test_r2_std": 0.00019232774136871057
+      },
+      {
+        "head": "knn",
+        "label": "astro_vit_small_step_21000",
+        "name": "Ours ViT-S/14 (step 21000)",
+        "sample": "AstroCLIP sample",
+        "test_r2": 0.47264634516265497,
+        "test_r2_std": 0.00021441283008834589
+      },
+      {
+        "head": "mlp",
+        "label": "astro_vit_small_step_21000",
+        "name": "Ours ViT-S/14 (step 21000)",
+        "sample": "AstroCLIP sample",
+        "test_r2": 0.5152646614002466,
+        "test_r2_std": 0.004080455057581041
+      },
+      {
+        "head": "ridge",
         "label": "vit_large_adapted_xmatch",
         "name": "Ours ViT-L/14 adapted (xmatch)",
         "sample": "AstroCLIP sample",
@@ -789,6 +888,33 @@
         "sample": "AstroCLIP sample",
         "test_r2": 0.527744862574182,
         "test_r2_std": 0.0023982619289254774
+      },
+      {
+        "head": "ridge",
+        "input": "frozen spectrum embeddings",
+        "label": "checkpoints_spectra",
+        "name": "Ours spectra (checkpoints_spectra)",
+        "sample": "AstroCLIP sample",
+        "test_r2": 0.4323282838399871,
+        "test_r2_std": 0.00022017094917054536
+      },
+      {
+        "head": "knn",
+        "input": "frozen spectrum embeddings",
+        "label": "checkpoints_spectra",
+        "name": "Ours spectra (checkpoints_spectra)",
+        "sample": "AstroCLIP sample",
+        "test_r2": 0.2775485367986615,
+        "test_r2_std": 0.0010376442332423593
+      },
+      {
+        "head": "mlp",
+        "input": "frozen spectrum embeddings",
+        "label": "checkpoints_spectra",
+        "name": "Ours spectra (checkpoints_spectra)",
+        "sample": "AstroCLIP sample",
+        "test_r2": 0.4018057593662276,
+        "test_r2_std": 0.006367005292118241
       }
     ],
     "published": {

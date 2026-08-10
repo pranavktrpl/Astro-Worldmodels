@@ -53,12 +53,21 @@ Caveats: Same question set and debiased-label protocol as our gzd5_morphology_pr
 | Ours ViT-S/14 adapted (xmatch) | ridge on frozen image embeddings | Galaxy10 DECaLS | 0.5768 ± 0.1679 | 0.6876 ± 0.0175 | local |
 | Ours ViT-S/14 adapted (xmatch) | knn on frozen image embeddings | Galaxy10 DECaLS | 0.5196 ± 0.1504 | 0.6173 ± 0.0177 | local |
 | Ours ViT-S/14 adapted (xmatch) | mlp on frozen image embeddings | Galaxy10 DECaLS | 0.5742 ± 0.1634 | 0.6838 ± 0.0270 | local |
+| Ours ViT-L/14 (step 52000) | ridge on frozen image embeddings | AstroCLIP sample | 0.5301 ± 0.0002 | n/a | local |
+| Ours ViT-L/14 (step 52000) | knn on frozen image embeddings | AstroCLIP sample | 0.4936 ± 0.0002 | n/a | local |
+| Ours ViT-L/14 (step 52000) | mlp on frozen image embeddings | AstroCLIP sample | 0.5424 ± 0.0008 | n/a | local |
+| Ours ViT-S/14 (step 21000) | ridge on frozen image embeddings | AstroCLIP sample | 0.5021 ± 0.0002 | n/a | local |
+| Ours ViT-S/14 (step 21000) | knn on frozen image embeddings | AstroCLIP sample | 0.4726 ± 0.0002 | n/a | local |
+| Ours ViT-S/14 (step 21000) | mlp on frozen image embeddings | AstroCLIP sample | 0.5153 ± 0.0041 | n/a | local |
 | Ours ViT-L/14 adapted (xmatch) | ridge on frozen image embeddings | AstroCLIP sample | 0.5506 ± 0.0002 | n/a | local |
 | Ours ViT-L/14 adapted (xmatch) | knn on frozen image embeddings | AstroCLIP sample | 0.5161 ± 0.0005 | n/a | local |
 | Ours ViT-L/14 adapted (xmatch) | mlp on frozen image embeddings | AstroCLIP sample | 0.5538 ± 0.0046 | n/a | local |
 | Ours ViT-S/14 adapted (xmatch) | ridge on frozen image embeddings | AstroCLIP sample | 0.5224 ± 0.0006 | n/a | local |
 | Ours ViT-S/14 adapted (xmatch) | knn on frozen image embeddings | AstroCLIP sample | 0.4981 ± 0.0002 | n/a | local |
 | Ours ViT-S/14 adapted (xmatch) | mlp on frozen image embeddings | AstroCLIP sample | 0.5277 ± 0.0024 | n/a | local |
+| Ours spectra (checkpoints_spectra) | ridge on frozen spectrum embeddings | AstroCLIP sample | 0.4323 ± 0.0002 | n/a | local |
+| Ours spectra (checkpoints_spectra) | knn on frozen spectrum embeddings | AstroCLIP sample | 0.2775 ± 0.0010 | n/a | local |
+| Ours spectra (checkpoints_spectra) | mlp on frozen spectrum embeddings | AstroCLIP sample | 0.4018 ± 0.0064 | n/a | local |
 | AstroCLIP Image, zero-shot kNN | image | DESI-LS images cross-matched with DESI spectra | 0.79 | n/r | published |
 | AstroCLIP Image, few-shot MLP | image | DESI-LS images cross-matched with DESI spectra | 0.78 | n/r | published |
 | AstroCLIP Spectrum, few-shot MLP | spectrum | DESI-LS images cross-matched with DESI spectra | 0.98 | n/r | published |
@@ -71,16 +80,20 @@ Caveats: Same question set and debiased-label protocol as our gzd5_morphology_pr
 
 Caveats: Our probe regresses Galaxy10 DECaLS metadata redshifts (z mostly < 0.25) from images alone; AstroCLIP and AION use different cross-matched samples and, for AION, photometry inputs. The AstroCLIP image rows are the closest protocol match (image-only, kNN and MLP heads).
 
-## Physical property regression (reference targets)
+## Physical property regression (PROVABGS)
 
-No local eval exists yet (requires PROVABGS labels). Published R² targets to beat once it does:
+| Model | Input / head | Stellar mass | Age | Metallicity | sSFR-like | Source |
+|---|---|---:|---:|---:|---:|---|
+| Ours spectra (checkpoints_spectra) | ridge on frozen spectrum embeddings | 0.5060 ± 0.0007 | 0.1847 ± 0.0012 | 0.2346 ± 0.0008 | 0.5102 ± 0.0005 | local |
+| Ours spectra (checkpoints_spectra) | knn on frozen spectrum embeddings | 0.1335 ± 0.0001 | 0.0989 ± 0.0006 | 0.0497 ± 0.0002 | 0.2688 ± 0.0006 | local |
+| Ours spectra (checkpoints_spectra) | mlp on frozen spectrum embeddings | 0.4490 ± 0.0062 | 0.1504 ± 0.0004 | 0.2087 ± 0.0019 | 0.4915 ± 0.0008 | local |
+| AION-1-B | photometry+image | 0.89 | 0.45 | 0.49 | 0.64 | published |
+| AION-1-L | photometry+image | 0.89 | 0.45 | 0.50 | 0.64 | published |
+| AION-1-XL | photometry+image | 0.89 | 0.45 | 0.49 | 0.64 | published |
+| AstroCLIP Image, zero-shot | image | 0.74 | 0.27 | 0.44 | 0.44 | published |
+| AstroCLIP Image, few-shot | image | 0.73 | 0.26 | 0.43 | 0.42 | published |
+| AstroCLIP Spectrum, zero-shot | spectrum | 0.87 | 0.43 | 0.57 | 0.63 | published |
+| AstroCLIP Spectrum, few-shot | spectrum | 0.88 | 0.43 | 0.58 | 0.64 | published |
 
-| Model | Input | Stellar mass | Age | Metallicity | sSFR-like |
-|---|---|---:|---:|---:|---:|
-| AION-1-B | photometry+image | 0.89 | 0.45 | 0.49 | 0.64 |
-| AION-1-L | photometry+image | 0.89 | 0.45 | 0.50 | 0.64 |
-| AION-1-XL | photometry+image | 0.89 | 0.45 | 0.49 | 0.64 |
-| AstroCLIP Image, zero-shot | image | 0.74 | 0.27 | 0.44 | 0.44 |
-| AstroCLIP Image, few-shot | image | 0.73 | 0.26 | 0.43 | 0.42 |
-| AstroCLIP Spectrum, few-shot | spectrum | 0.88 | 0.43 | 0.58 | 0.64 |
+Caveats: Our probe regresses PROVABGS properties from frozen spectrum embeddings on the AstroCLIP cross-match split (catalog joined by targetid), so the AstroCLIP Spectrum rows are the closest protocol match; the AION rows use photometry+image inputs on a different sample, and sSFR-like maps our log sSFR to AION's SFR-flavored target.
 

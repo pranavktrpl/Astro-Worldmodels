@@ -1,0 +1,28 @@
+{
+  "checkpoint": "/mnt/ssd-cluster/maja/Astro-Worldmodels/checkpoints/ViTLarge_52000.pt",
+  "dr2_rgb": {
+    "m": 0.03,
+    "q": 20.0,
+    "scales": {
+      "g": [
+        2,
+        6.0
+      ],
+      "r": [
+        1,
+        3.4
+      ],
+      "z": [
+        0,
+        2.2
+      ]
+    }
+  },
+  "embedding_dim": 1024,
+  "global_step": 52000,
+  "input_size": 140,
+  "model_name": "vit_large_patch14_dinov2.lvd142m",
+  "preprocessing": "dr2_rgb_arcsinh_to_0_1_then_bicubic_resize",
+  "source": "mhsotoudeh/astroclip parquet mirror: /mnt/ssd-cluster/maja/Astro-Worldmodels/Evals/desi_crossmatch/data/astroclip",
+  "split": "AstroCLIP train/test splits as shipped in the dataset"
+}
