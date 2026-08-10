@@ -7,6 +7,8 @@ results produced by the other eval suites:
   galaxy10_checkpoint_evolution/results/best_checkpoints.json
   gzd5_morphology_probe/results/<model>/metrics.json
   redshift_regression/results/<model>/metrics.json
+  spectra_redshift/results/<label>/metrics.json
+  spectra_properties/results/<label>/metrics.json
 
 and writes, to --output-dir (default ./results):
 
@@ -15,6 +17,7 @@ and writes, to --output-dir (default ./results):
   galaxy10_accuracy_vs_competitors.png
   gzd5_questions_vs_astroclip.png
   redshift_r2_vs_competitors.png   (only once the redshift probe has run)
+  properties_r2_vs_competitors.png (only once the PROVABGS probe has run)
 
 Missing local results are reported as pending, never fatal, so this can be
 re-run after every new eval to refresh the comparison.
@@ -80,6 +83,13 @@ GZD5_QUESTIONS = [
     "merging",
 ]
 REDSHIFT_HEADS = ("ridge", "knn", "mlp")
+# (local metrics.json key, display name, baselines.json key)
+PROPERTY_KEYS = (
+    ("stellar_mass", "Stellar mass", "stellar_mass"),
+    ("metallicity", "Metallicity", "metallicity"),
+    ("age", "Age", "age"),
+    ("ssfr", "sSFR", "ssfr_like"),
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -231,6 +241,49 @@ def collect_redshift_astroclip_sample(evals_root: Path) -> list[dict[str, Any]]:
                     "test_r2_std": stats["std"],
                 }
             )
+    return rows
+
+
+def collect_redshift_spectra(evals_root: Path) -> list[dict[str, Any]]:
+    rows = []
+    results_dir = evals_root / "spectra_redshift/results"
+    for metrics_path in sorted(results_dir.glob("*/metrics.json")):
+        data = json.loads(metrics_path.read_text())
+        label = metrics_path.parent.name
+        for head in REDSHIFT_HEADS:
+            stats = data["summary"][head]["test"]["r2"]
+            rows.append(
+                {
+                    "name": f"Ours spectra ({label})",
+                    "label": label,
+                    "head": head,
+                    "input": "frozen spectrum embeddings",
+                    "sample": "AstroCLIP sample",
+                    "test_r2": stats["mean"],
+                    "test_r2_std": stats["std"],
+                }
+            )
+    return rows
+
+
+def collect_properties(evals_root: Path) -> list[dict[str, Any]]:
+    rows = []
+    results_dir = evals_root / "spectra_properties/results"
+    for metrics_path in sorted(results_dir.glob("*/metrics.json")):
+        data = json.loads(metrics_path.read_text())
+        label = metrics_path.parent.name
+        for head in REDSHIFT_HEADS:
+            row: dict[str, Any] = {
+                "name": f"Ours spectra ({label})",
+                "label": label,
+                "head": head,
+                "input": "spectrum",
+            }
+            for key, _, _ in PROPERTY_KEYS:
+                stats = data["properties"][key]["summary"][head]["test"]["r2"]
+                row[key] = stats["mean"]
+                row[f"{key}_std"] = stats["std"]
+            rows.append(row)
     return rows
 
 
@@ -472,6 +525,88 @@ def plot_redshift(
     plt.close(fig)
 
 
+def plot_properties(
+    ours: list[dict[str, Any]], baseline: dict[str, Any], output_dir: Path
+) -> None:
+    ours_colors = [OURS_BLUE, OURS_ORANGE, OURS_AQUA, OURS_YELLOW]
+    series = [
+        (
+            f"{row['name']} — {row['head'].upper() if row['head'] == 'mlp' else row['head']}",
+            ours_colors[index % len(ours_colors)],
+            None,
+            [row[key] for key, _, _ in PROPERTY_KEYS],
+            [row[f"{key}_std"] for key, _, _ in PROPERTY_KEYS],
+        )
+        for index, row in enumerate(ours)
+    ]
+    published_styles = {
+        "AstroCLIP Spectrum, few-shot": None,
+        "AstroCLIP Image, few-shot": "//",
+    }
+    for c in baseline["competitors"]:
+        hatch = published_styles.get(c["name"], "skip")
+        if hatch == "skip":
+            continue
+        series.append(
+            (
+                f"{c['name']} (published)",
+                COMPETITOR_GRAY,
+                hatch,
+                [c[bkey] for _, _, bkey in PROPERTY_KEYS],
+                None,
+            )
+        )
+
+    fig, ax = plt.subplots(figsize=(10.4, 5.2))
+    fig.set_facecolor(SURFACE)
+    style_axis(ax)
+    positions = np.arange(len(PROPERTY_KEYS))
+    width = 0.8 / max(len(series), 1)
+    for index, (label, color, hatch, values, errors) in enumerate(series):
+        offset = (index - (len(series) - 1) / 2) * width
+        bar_positions = positions + offset
+        ax.bar(
+            bar_positions,
+            values,
+            width=width * 0.92,
+            color=color,
+            hatch=hatch,
+            edgecolor=SURFACE if hatch else None,
+            label=label,
+            zorder=2,
+        )
+        if errors is not None:
+            ax.errorbar(
+                bar_positions,
+                values,
+                yerr=errors,
+                fmt="none",
+                ecolor=TEXT_SECONDARY,
+                elinewidth=1.0,
+                capsize=2,
+                zorder=3,
+            )
+        for x, value in zip(bar_positions, values):
+            ax.text(
+                x, value + 0.02, f"{value:.2f}", ha="center", fontsize=8, color=TEXT
+            )
+    ax.set_xticks(positions)
+    ax.set_xticklabels([name for _, name, _ in PROPERTY_KEYS], color=TEXT)
+    ax.set_ylim(0, 1.05)
+    ax.set_ylabel("Test R²", color=TEXT_SECONDARY, fontsize=10)
+    ax.set_title(
+        "PROVABGS physical properties on frozen embeddings — ours vs AstroCLIP\n"
+        "(same eval sample and split as AstroCLIP: DESI cross-match × PROVABGS)",
+        color=TEXT,
+        fontsize=11,
+        loc="left",
+    )
+    ax.legend(loc="upper right", frameon=False, fontsize=8.5)
+    fig.tight_layout()
+    fig.savefig(output_dir / "properties_r2_vs_competitors.png", dpi=200)
+    plt.close(fig)
+
+
 # ---------------------------------------------------------------------------
 # Markdown report
 # ---------------------------------------------------------------------------
@@ -482,6 +617,7 @@ def markdown_report(
     galaxy10: list[dict[str, Any]],
     gzd5: list[dict[str, Any]],
     redshift: list[dict[str, Any]],
+    properties: list[dict[str, Any]],
 ) -> str:
     lines: list[str] = ["# Competitor comparison", ""]
     lines.append(
@@ -544,8 +680,9 @@ def markdown_report(
             if "test_clipped_r2" in row
             else "n/a"
         )
+        input_text = row.get("input", "frozen image embeddings")
         lines.append(
-            f"| {row['name']} | {row['head']} on frozen image embeddings | "
+            f"| {row['name']} | {row['head']} on {input_text} | "
             f"{row['sample']} | "
             f"{row['test_r2']:.4f} ± {row['test_r2_std']:.4f} | {clipped} | local |"
         )
@@ -561,20 +698,33 @@ def markdown_report(
         )
     lines += ["", f"Caveats: {baselines['redshift_regression']['caveats']}"]
 
-    lines += ["", "## Physical property regression (reference targets)", ""]
+    lines += ["", "## Physical property regression (PROVABGS)", ""]
     lines.append(
-        "No local eval exists yet (requires PROVABGS labels). Published R² "
-        "targets to beat once it does:"
+        "| Model | Input / head | Stellar mass | Age | Metallicity | sSFR-like "
+        "| Source |"
     )
-    lines.append("")
-    lines.append("| Model | Input | Stellar mass | Age | Metallicity | sSFR-like |")
-    lines.append("|---|---|---:|---:|---:|---:|")
+    lines.append("|---|---|---:|---:|---:|---:|---|")
+    for row in properties:
+        cells = " | ".join(
+            f"{row[key]:.4f} ± {row[f'{key}_std']:.4f}"
+            for key in ("stellar_mass", "age", "metallicity", "ssfr")
+        )
+        lines.append(
+            f"| {row['name']} | {row['head']} on frozen {row['input']} embeddings | "
+            f"{cells} | local |"
+        )
+    if not properties:
+        lines.append(
+            "| _pending — run `spectra_properties/spectra_properties_probe.py` "
+            "on the cluster_ | | | | | | local |"
+        )
     for c in baselines["physical_properties"]["competitors"]:
         lines.append(
             f"| {c['name']} | {c['input']} | {c['stellar_mass']:.2f} | "
-            f"{c['age']:.2f} | {c['metallicity']:.2f} | {c['ssfr_like']:.2f} |"
+            f"{c['age']:.2f} | {c['metallicity']:.2f} | {c['ssfr_like']:.2f} "
+            "| published |"
         )
-    lines.append("")
+    lines += ["", f"Caveats: {baselines['physical_properties']['caveats']}", ""]
     return "\n".join(lines) + "\n"
 
 
@@ -588,12 +738,15 @@ def main() -> None:
     gzd5 = collect_gzd5(args.evals_root)
     redshift_galaxy10 = collect_redshift(args.evals_root)
     redshift_astroclip = collect_redshift_astroclip_sample(args.evals_root)
-    redshift = redshift_galaxy10 + redshift_astroclip
+    redshift_spectra = collect_redshift_spectra(args.evals_root)
+    redshift = redshift_galaxy10 + redshift_astroclip + redshift_spectra
+    properties = collect_properties(args.evals_root)
 
     for task, rows in (
         ("galaxy10", galaxy10),
         ("gzd5", gzd5),
         ("redshift", redshift),
+        ("properties", properties),
     ):
         status = f"{len(rows)} local result(s)" if rows else "pending (no local results)"
         print(f"{task}: {status}")
@@ -609,7 +762,7 @@ def main() -> None:
             "published": baselines["redshift_regression"],
         },
         "physical_properties": {
-            "ours": [],
+            "ours": properties,
             "published": baselines["physical_properties"],
         },
     }
@@ -617,7 +770,7 @@ def main() -> None:
         json.dumps(comparison, indent=2, sort_keys=True) + "\n"
     )
     (output_dir / "comparison_tables.md").write_text(
-        markdown_report(baselines, galaxy10, gzd5, redshift)
+        markdown_report(baselines, galaxy10, gzd5, redshift, properties)
     )
 
     if galaxy10:
@@ -632,6 +785,8 @@ def main() -> None:
             output_dir,
             matched_sample=bool(redshift_astroclip),
         )
+    if properties:
+        plot_properties(properties, baselines["physical_properties"], output_dir)
 
     print(f"wrote {output_dir}/comparison.json, comparison_tables.md and charts")
 
