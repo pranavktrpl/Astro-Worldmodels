@@ -28,19 +28,21 @@ together with the AION-1 rows.)
 ## Usage
 
 ```bash
-# full battery (3 seeds, all heads, all four properties); on the cluster the
-# original DESI VAC catalog already exists at /mnt/datasets/provabgs/
+# one-time: the MMU catalog conversion (~1.4 GB, resumable)
+bash Evals/spectra_properties/download_provabgs.sh
+
+# full battery (3 seeds, all heads, all four properties)
 python Evals/spectra_properties/spectra_properties_probe.py \
-  --checkpoint checkpoints/SPECTRA_run4_bs16_2806_Epoch5_utbd_desi/step_<best>.pt \
-  --provabgs-path /mnt/datasets/provabgs/BGS_ANY_full.provabgs.sv3.v0.hdf5
+  --checkpoint checkpoints/SPECTRA_run4_bs16_2806_Epoch5_utbd_desi/step_<best>.pt
 ```
 
-`--provabgs-path` accepts either the original DESI VAC HDF5 (as above; both
-the one-dataset-per-column and single-compound-dataset layouts work, with
-`PROVABGS_*`-prefixed or unprefixed column names) or a directory of MMU
-parquet shards — on machines without the VAC file, fetch those with
-`bash Evals/spectra_properties/download_provabgs.sh` (~1.4 GB) and omit the
-flag. The spectra come from the desi_crossmatch download either way.
+The MMU conversion is required (not just convenient): the original DESI VAC
+HDF5 (`BGS_ANY_full.provabgs.sv3.v0.hdf5`, e.g. under `/mnt/datasets/provabgs/`
+on the cluster) stores posterior chains and `PROVABGS_THETA_BF` but no derived
+`Z_MW`/`TAGE_MW`/`AVG_SFR` columns — deriving them needs the `provabgs` SPS
+package, which is the work the MMU conversion already did. `--provabgs-path`
+still accepts an HDF5 file for catalogs that do carry the derived columns;
+otherwise point it at (or symlink) a directory of MMU parquet shards.
 
 Results land in `results/<label>/metrics.json`. Use the checkpoint the
 redshift probe's `--scan` selected — this probe does its own head/epoch
