@@ -19,5 +19,5 @@ echo "Downloading ~1.4 GB to $TARGET_DIR (resumable)"
 hf download UniverseTBD/mmu_desi_provabgs --repo-type dataset --local-dir "$TARGET_DIR"
 
 SHARDS=$(find "$TARGET_DIR" -name 'Npix=*.parquet' | wc -l)
-echo "catalog shards present: $SHARDS/160"
-[ "$SHARDS" -eq 160 ] && echo "COMPLETE" || { echo "INCOMPLETE — re-run to resume"; exit 1; }
+echo "catalog shards present: $SHARDS/148"
+[ "$SHARDS" -eq 148 ] && echo "COMPLETE" || { echo "INCOMPLETE — re-run to resume"; exit 1; }
