@@ -103,12 +103,16 @@ def load_encoder(
         pooling=str(cfg.get("spectra_pooling", "cls")),
     )
     encoder.load_state_dict(checkpoint["model"])
+    # run5+ checkpoints carry their per-spectrum normalization mode in cfg;
+    # attach it so every embedding path preprocesses exactly like training.
+    encoder.flux_normalize = str(cfg.get("spectra_normalize", "none"))
     meta = {
         "checkpoint": str(checkpoint_path.resolve()),
         "global_step": int(checkpoint.get("global_step", -1)),
         "model_name": str(cfg.get("model_name", "spectrum_transformer")),
         "embedding_dim": int(encoder.embed_dim),
         "pooling": encoder.pooling,
+        "flux_normalize": encoder.flux_normalize,
     }
     encoder.to(device).eval()
     return encoder, meta
@@ -142,11 +146,14 @@ def embed_spectra(
     patch_size = encoder.patch_size
     num_patches = encoder.num_patches
     usable = num_patches * patch_size
+    normalize = getattr(encoder, "flux_normalize", "none")
     chunks = []
     progress = tqdm(desc=description, total=total, leave=False)
     for array in batches:
-        spectra = torch.from_numpy(array[:, :usable])
-        crops = spectra.reshape(-1, 1, num_patches, patch_size).to(device)
+        # Normalize over the full spectrum before dropping the tail, exactly
+        # as the training transform does.
+        spectra = train_spectra.normalize_flux(torch.from_numpy(array), normalize)
+        crops = spectra[:, :usable].reshape(-1, 1, num_patches, patch_size).to(device)
         masks = torch.ones(
             crops.shape[0], 1, num_patches, dtype=torch.float32, device=device
         )

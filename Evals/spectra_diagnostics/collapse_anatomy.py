@@ -105,6 +105,7 @@ def anatomy_pass(
     """
     patch_size, num_patches = encoder.patch_size, encoder.num_patches
     usable = patch_size * num_patches
+    normalize = getattr(encoder, "flux_normalize", "none")
     layers = list(encoder.transformer.layers)
     captured: list[torch.Tensor] = []
     hooks = [
@@ -120,8 +121,11 @@ def anatomy_pass(
     try:
         for start in range(0, len(raw), batch_size):
             array = raw[start : start + batch_size]
+            spectra = sp.train_spectra.normalize_flux(
+                torch.from_numpy(array), normalize
+            )
             crops = (
-                torch.from_numpy(array[:, :usable])
+                spectra[:, :usable]
                 .reshape(-1, 1, num_patches, patch_size)
                 .to(device)
             )

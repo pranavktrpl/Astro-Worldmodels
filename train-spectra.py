@@ -15,6 +15,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 
 from data.dataloaders import DesiSpectraDataset  # Spectra-specific: stream DESI patch crops instead of galaxy image crops.
+from data.SpectraTransforms import normalize_flux  # Shared with the eval probes so train/eval preprocessing always match.
 from models.resnet9 import MLP #Resnet9, 
 
 import lejepa
@@ -47,6 +48,21 @@ class SpectraTrainConfig(TrainConfig):
     spectra_global_scale: tuple[float, float] = (0.90, 1.0)
     spectra_local_scale: tuple[float, float] = (0.35, 0.50)
 
+    # run5 anti-collapse changes (see Evals/spectra_diagnostics: run4 embeds
+    # at effective rank ~5/768, flat from layer 1).
+    # 1. Per-spectrum normalization removes the brightness/continuum shortcut.
+    spectra_normalize: str = "median_mad"
+    # 2. PAD-drop this fraction of kept patches per view (harder pretext).
+    spectra_view_mask_ratio: float = 0.30
+    # 3. SIGReg statistics: gather across DDP ranks (bs=16 per rank is
+    #    statistically toothless) and regularize the 768-d embedding too,
+    #    not only the 64-d projection the probes never use.
+    sigreg_gather: bool = True
+    embed_lambd: float = 0.05
+    # 4. Log RankMe of embedding/projection so collapse is visible in-run.
+    rankme_every: int = 200
+    rankme_buffer: int = 4096
+
     # Spectra-specific: transformer backbone knobs for 1D spectra patches.
     spectra_embed_dim: int = 768
     spectra_depth: int = 12
@@ -61,8 +77,8 @@ class SpectraTrainConfig(TrainConfig):
 
     # Spectra-specific: keep LeJEPA view counts and loss defaults, but save/log under spectra names.
     project: str = "astrojepa"
-    run_name: str = "SPECTRA_run4_bs16_2806_Epoch5_utbd_desi"
-    save_dir: str = "./checkpoints/SPECTRA_run4_bs16_2806_Epoch5_utbd_desi"
+    run_name: str = "SPECTRA_run5_norm_embreg_utbd_desi"
+    save_dir: str = "./checkpoints/SPECTRA_run5_norm_embreg_utbd_desi"
     resume_path: str | None = None
     wandb_run_id: str | None = None
     wandb_resume: str = "allow"
@@ -121,6 +137,8 @@ def build_train_loader(cfg, world_size, rank):
         pad_value=getattr(cfg, "spectra_pad_value", 0.0),
         global_scale=getattr(cfg, "spectra_global_scale", (0.947, 1.0)),
         local_scale=getattr(cfg, "spectra_local_scale", (0.20, 0.394)),
+        normalize=getattr(cfg, "spectra_normalize", "none"),
+        view_mask_ratio=getattr(cfg, "spectra_view_mask_ratio", 0.0),
     )
     train_loader = DataLoader(
         train_ds, batch_size=cfg.bs, num_workers=cfg.num_workers, pin_memory=True, persistent_workers=(cfg.num_workers > 0), timeout=600 if cfg.num_workers > 0 else 0, drop_last=True     # Spectra-specific: yields crops [B, V, 389, 20] plus masks [B, V, 389].
@@ -308,17 +326,69 @@ def build_sigreg(cfg, device):
     )
     return sigreg_fn.to(device)
 
-def compute_lejepa_loss(proj, sigreg_fn, lambd, num_global_views):
-    # proj: [V, B, P]
+def gather_for_stats(x):
+    # Spectra-specific (run5): the SIGReg statistic on bs=16 per rank has no
+    # power; gathering across ranks multiplies its sample size by world_size.
+    # torch.distributed.nn.all_gather keeps autograd through the collective.
+    if dist.is_available() and dist.is_initialized() and dist.get_world_size() > 1:
+        import torch.distributed.nn as dist_nn
+        return torch.cat(dist_nn.all_gather(x), dim=0)
+    return x
+
+
+def compute_lejepa_loss(
+    proj, sigreg_fn, lambd, num_global_views, emb=None, embed_lambd=0.0, gather=False
+):
+    # proj: [V, B, P]; emb: [V, B, D]
     global_proj = proj[:num_global_views]             # [Vg, B, P]
     centers = global_proj.mean(0)                     # [B, P]
 
     sim = (centers.unsqueeze(0) - proj).square().mean()
 
-    sigreg = torch.stack([sigreg_fn(proj[v]) for v in range(proj.size(0))]).mean()
+    def views_sigreg(features):
+        views = [
+            sigreg_fn(gather_for_stats(features[v]) if gather else features[v])
+            for v in range(features.size(0))
+        ]
+        return torch.stack(views).mean()
 
-    loss = (1 - lambd) * sim + lambd * sigreg
-    return loss, sim, sigreg
+    sigreg = views_sigreg(proj)
+    # run5: regularize the 768-d embedding directly — run4 collapsed to
+    # effective rank ~5 there while SIGReg only ever saw the 64-d projection.
+    embed_sigreg = (
+        views_sigreg(emb)
+        if emb is not None and embed_lambd > 0.0
+        else torch.zeros_like(sim)
+    )
+
+    loss = (1 - lambd) * sim + lambd * sigreg + embed_lambd * embed_sigreg
+    return loss, sim, sigreg, embed_sigreg
+
+
+class RankMeMonitor:
+    # Spectra-specific (run5): rolling RankMe (exp singular-value entropy) so
+    # collapse is visible within the first few hundred steps, not after 5
+    # epochs of training plus an eval run.
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.chunks = []
+        self.count = 0
+
+    def update(self, features):
+        chunk = features.detach().float()
+        self.chunks.append(chunk)
+        self.count += chunk.shape[0]
+        while self.count - self.chunks[0].shape[0] >= self.capacity:
+            self.count -= self.chunks[0].shape[0]
+            self.chunks.pop(0)
+
+    def rankme(self):
+        x = torch.cat(self.chunks)
+        x = x - x.mean(dim=0)
+        singular = torch.linalg.svdvals(x)
+        shares = singular / singular.sum().clamp_min(1e-12)
+        shares = shares[shares > 0]
+        return float(torch.exp(-(shares * shares.log()).sum()))
 
 
 def build_optimizer_and_scheduler(cfg, model):
@@ -503,6 +573,10 @@ def main():
         print(f"total params: {model_total:,}")
 
     sigreg_fn = build_sigreg(cfg, device)
+    # Spectra-specific (run5): per-rank rolling RankMe of the first global
+    # view's embedding/projection, logged so collapse shows up in-run.
+    emb_rank_monitor = RankMeMonitor(getattr(cfg, "rankme_buffer", 4096))
+    proj_rank_monitor = RankMeMonitor(getattr(cfg, "rankme_buffer", 4096))
 
     opt, scheduler = build_optimizer_and_scheduler(cfg, model)
     amp_dtype, scaler = build_amp(cfg)
@@ -593,7 +667,15 @@ def main():
                 # Keep only forward + loss in autocast:
                 # Spectra-specific: pass masks explicitly so PAD tokens are ignored by attention and pooling.
                 emb, proj = model(global_crops, global_masks, local_crops, local_masks)
-                loss, sim, sigreg = compute_lejepa_loss(proj = proj, sigreg_fn = sigreg_fn, lambd = cfg.lambd, num_global_views = cfg.Vg)
+                loss, sim, sigreg, embed_sigreg = compute_lejepa_loss(
+                    proj=proj,
+                    sigreg_fn=sigreg_fn,
+                    lambd=cfg.lambd,
+                    num_global_views=cfg.Vg,
+                    emb=emb,
+                    embed_lambd=getattr(cfg, "embed_lambd", 0.0),
+                    gather=getattr(cfg, "sigreg_gather", False),
+                )
             
             if scaler.is_enabled():
                 scaler.scale(loss).backward()
@@ -606,6 +688,20 @@ def main():
 
             scheduler.step()
             global_step += 1
+            emb_rank_monitor.update(emb[0])
+            proj_rank_monitor.update(proj[0])
+            if (
+                global_step % getattr(cfg, "rankme_every", 200) == 0
+                and is_main_process(rank)
+                and wandb_run is not None
+            ):
+                wandb_run.log(
+                    {
+                        "train/rankme_emb": emb_rank_monitor.rankme(),
+                        "train/rankme_proj": proj_rank_monitor.rankme(),
+                    },
+                    step=global_step,
+                )
             
             lr = scheduler.get_last_lr()[0]
             
@@ -617,6 +713,7 @@ def main():
                 loss_mean = ddp_mean(loss.detach(), world_size)
                 sim_mean = ddp_mean(sim.detach(), world_size)
                 sigreg_mean = ddp_mean(sigreg.detach(), world_size)
+                embed_sigreg_mean = ddp_mean(embed_sigreg.detach(), world_size)
                 
                 emb_mean_std_mean = ddp_mean(emb_mean_std.detach(), world_size)
                 emb_min_std_mean = ddp_mean(emb_min_std.detach(), world_size)
@@ -640,6 +737,7 @@ def main():
                                 "train/loss": loss_mean.item(),
                                 "train/sim": sim_mean.item(),
                                 "train/sigreg": sigreg_mean.item(),
+                                "train/embed_sigreg": embed_sigreg_mean.item(),
                                 "train/emb_mean_std": emb_mean_std_mean.item(),
                                 "train/emb_min_std": emb_min_std_mean.item(),
                                 "train/proj_mean_std": proj_mean_std_mean.item(),

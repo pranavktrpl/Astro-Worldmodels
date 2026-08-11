@@ -62,6 +62,8 @@ class DesiSpectraDataset(torch.utils.data.IterableDataset):#, DistributedSampler
         pad_value = 0.0,
         global_scale = (0.947, 1.0),
         local_scale = (0.20, 0.394),
+        normalize = "none",
+        view_mask_ratio = 0.0,
     ):
         self.ds = DesiSpectraSource(dataset, columns, split)
         self.world_size = world_size
@@ -76,6 +78,8 @@ class DesiSpectraDataset(torch.utils.data.IterableDataset):#, DistributedSampler
             local_scale=local_scale,
             patch_size=patch_size,
             pad_value=pad_value,
+            normalize=normalize,
+            view_mask_ratio=view_mask_ratio,
         )
 
     def set_epoch(self, epoch):
