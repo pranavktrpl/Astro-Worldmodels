@@ -176,22 +176,29 @@ def read_subsampled_spectra(
 
 def ridge_r2(
     features: np.ndarray,
-    redshifts: np.ndarray,
+    targets: np.ndarray,
     fit_rows: np.ndarray,
     val_rows: np.ndarray,
     device: torch.device,
 ) -> float:
+    """Best ridge validation R2. `targets` must be row-aligned with `features`
+    (same length and order); fit_rows/val_rows index into both."""
+    if len(targets) != len(features):
+        raise ValueError(
+            f"targets ({len(targets)}) not row-aligned with features "
+            f"({len(features)})"
+        )
     x = torch.from_numpy(features).float()
     mean = x[fit_rows].mean(dim=0)
     std = x[fit_rows].std(dim=0).clamp_min(1e-6)
     fit_x = ((x[fit_rows] - mean) / std).to(device)
     val_x = ((x[val_rows] - mean) / std).to(device)
-    fit_y = torch.from_numpy(redshifts[fit_rows]).float().to(device)
+    fit_y = torch.from_numpy(targets[fit_rows]).float().to(device)
     best = -np.inf
     for l2_value in rp.RIDGE_L2_GRID:
         weights, y_mean = rp.fit_ridge(fit_x, fit_y, l2_value)
         r2 = rp.regression_metrics(
-            rp.predict_ridge(val_x, weights, y_mean), redshifts[val_rows]
+            rp.predict_ridge(val_x, weights, y_mean), targets[val_rows]
         )["r2"]
         best = max(best, r2)
     return float(best)
@@ -231,17 +238,18 @@ def information_floor(
     del whitened
 
     sub_embeddings = embeddings[torch.from_numpy(kept_order)].numpy()
+    sub_redshifts = redshifts[kept_order]
     results = {
         "subsample": int(len(subsample)),
         "protocol": "ridge validation R2, seed-42 subsample, 10% carve-out "
         "(same as spectra_probe --scan)",
         "ridge_val_r2": {
             "embedding": ridge_r2(
-                sub_embeddings, redshifts, fit_rows, val_rows, device
+                sub_embeddings, sub_redshifts, fit_rows, val_rows, device
             ),
-            "raw_flux": ridge_r2(raw, redshifts, fit_rows, val_rows, device),
+            "raw_flux": ridge_r2(raw, sub_redshifts, fit_rows, val_rows, device),
             f"raw_flux_pca{dim}": ridge_r2(
-                pca, redshifts, fit_rows, val_rows, device
+                pca, sub_redshifts, fit_rows, val_rows, device
             ),
         },
     }

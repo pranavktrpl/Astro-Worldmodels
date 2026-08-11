@@ -163,18 +163,19 @@ def anatomy_pass(
 
 def representation_report(
     features: np.ndarray,
-    redshifts: np.ndarray,
+    targets: np.ndarray,
     fit_rows: np.ndarray,
     val_rows: np.ndarray,
     device: torch.device,
 ) -> dict[str, float]:
+    """`targets` must be row-aligned with `features` (subset order)."""
     stats = eh.spectrum_stats(torch.from_numpy(features))
     return {
         "dimension": stats["dimension"],
         "effective_rank": round(stats["effective_rank"], 2),
         "rankme": round(stats["rankme"], 2),
         "ridge_val_r2": round(
-            eh.ridge_r2(features, redshifts, fit_rows, val_rows, device), 4
+            eh.ridge_r2(features, targets, fit_rows, val_rows, device), 4
         ),
     }
 
@@ -322,10 +323,11 @@ def main() -> None:
     representations["crop_final_mean"] = cropped["final_mean"]
     del cropped
 
+    sub_redshifts = redshifts[kept_order]
     reports = {}
     for name, features in representations.items():
         reports[name] = representation_report(
-            features, redshifts, fit_rows, val_rows, device
+            features, sub_redshifts, fit_rows, val_rows, device
         )
         print(
             f"{name:16s} rank {reports[name]['effective_rank']:7.1f} / "
