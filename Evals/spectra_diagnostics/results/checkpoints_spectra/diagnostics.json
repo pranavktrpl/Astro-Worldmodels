@@ -1,0 +1,37 @@
+{
+  "embedding_metadata": {
+    "checkpoint": "/mnt/ssd-cluster/maja/Astro-Worldmodels/checkpoints/spectra.pt",
+    "embedding_dim": 768,
+    "global_step": 15647,
+    "model_name": "desi_utbd_spectrum_transformer",
+    "pooling": "cls",
+    "preprocessing": "raw_flux_full_patchify_no_crop",
+    "source": "/mnt/ssd-cluster/maja/Astro-Worldmodels/Evals/desi_crossmatch/data/astroclip",
+    "split": "AstroCLIP train/test splits as shipped in the dataset"
+  },
+  "information_floor": {
+    "protocol": "ridge validation R2, seed-42 subsample, 10% carve-out (same as spectra_probe --scan)",
+    "ridge_val_r2": {
+      "embedding": -0.002168102853823184,
+      "raw_flux": -0.023699177601511412,
+      "raw_flux_pca768": -0.01933282421753746
+    },
+    "subsample": 20000
+  },
+  "label": "checkpoints_spectra",
+  "spectrum_stats": {
+    "dead_dimensions": 0,
+    "dimension": 768,
+    "effective_rank": 4.574466406086111,
+    "num_embeddings": 168280,
+    "participation_ratio": 3.316207336223086,
+    "pcs_for_99pct_variance": 10,
+    "rankme": 18.363432902912713,
+    "variance_share_top1": 0.4320754056705898,
+    "variance_share_top10": 0.9902363108595869,
+    "variance_share_top50": 0.999929360660369
+  },
+  "verdicts": [
+    "LOW effective rank \u2014 embedding is (partially) collapsed."
+  ]
+}

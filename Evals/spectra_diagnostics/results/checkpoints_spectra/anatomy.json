@@ -1,0 +1,217 @@
+{
+  "checkpoint_metadata": {
+    "checkpoint": "/mnt/ssd-cluster/maja/Astro-Worldmodels/checkpoints/spectra.pt",
+    "embedding_dim": 768,
+    "global_step": 15647,
+    "model_name": "desi_utbd_spectrum_transformer",
+    "pooling": "cls"
+  },
+  "crop_scale": [
+    0.9,
+    1.0
+  ],
+  "label": "checkpoints_spectra",
+  "pc_covariate_correlations": {
+    "flux_std": [
+      0.019527605180659924,
+      -0.17009245398305473,
+      -0.24416713833417247,
+      -0.016143052465787438,
+      -0.038656381644244966
+    ],
+    "median_flux": [
+      -0.37739285376982334,
+      -0.27922285785502376,
+      -0.43365975319718875,
+      -0.22608458746525614,
+      -0.49561278090959904
+    ],
+    "redshift": [
+      0.1668057917084758,
+      0.27387866656808824,
+      0.10830799512129245,
+      0.022231215777546696,
+      0.14141688010470163
+    ]
+  },
+  "representations": {
+    "crop_final_cls": {
+      "dimension": 768,
+      "effective_rank": 4.57,
+      "rankme": 18.05,
+      "ridge_val_r2": -0.0023
+    },
+    "crop_final_mean": {
+      "dimension": 768,
+      "effective_rank": 4.62,
+      "rankme": 21.23,
+      "ridge_val_r2": -0.0045
+    },
+    "final_cls": {
+      "dimension": 768,
+      "effective_rank": 4.57,
+      "rankme": 18.12,
+      "ridge_val_r2": -0.0023
+    },
+    "final_mean": {
+      "dimension": 768,
+      "effective_rank": 4.62,
+      "rankme": 21.32,
+      "ridge_val_r2": -0.0046
+    },
+    "layer01_cls": {
+      "dimension": 768,
+      "effective_rank": 2.41,
+      "rankme": 11.4,
+      "ridge_val_r2": -0.0002
+    },
+    "layer01_mean": {
+      "dimension": 768,
+      "effective_rank": 3.63,
+      "rankme": 20.56,
+      "ridge_val_r2": -0.0035
+    },
+    "layer02_cls": {
+      "dimension": 768,
+      "effective_rank": 3.08,
+      "rankme": 13.19,
+      "ridge_val_r2": -0.0034
+    },
+    "layer02_mean": {
+      "dimension": 768,
+      "effective_rank": 3.12,
+      "rankme": 14.83,
+      "ridge_val_r2": -0.0029
+    },
+    "layer03_cls": {
+      "dimension": 768,
+      "effective_rank": 3.25,
+      "rankme": 13.61,
+      "ridge_val_r2": -0.0031
+    },
+    "layer03_mean": {
+      "dimension": 768,
+      "effective_rank": 3.29,
+      "rankme": 15.3,
+      "ridge_val_r2": -0.0032
+    },
+    "layer04_cls": {
+      "dimension": 768,
+      "effective_rank": 3.41,
+      "rankme": 14.52,
+      "ridge_val_r2": -0.0029
+    },
+    "layer04_mean": {
+      "dimension": 768,
+      "effective_rank": 3.41,
+      "rankme": 16.33,
+      "ridge_val_r2": -0.0035
+    },
+    "layer05_cls": {
+      "dimension": 768,
+      "effective_rank": 3.56,
+      "rankme": 15.2,
+      "ridge_val_r2": -0.0026
+    },
+    "layer05_mean": {
+      "dimension": 768,
+      "effective_rank": 3.47,
+      "rankme": 16.88,
+      "ridge_val_r2": -0.0037
+    },
+    "layer06_cls": {
+      "dimension": 768,
+      "effective_rank": 3.69,
+      "rankme": 16.0,
+      "ridge_val_r2": -0.0023
+    },
+    "layer06_mean": {
+      "dimension": 768,
+      "effective_rank": 3.57,
+      "rankme": 17.68,
+      "ridge_val_r2": -0.0035
+    },
+    "layer07_cls": {
+      "dimension": 768,
+      "effective_rank": 3.82,
+      "rankme": 16.62,
+      "ridge_val_r2": -0.0021
+    },
+    "layer07_mean": {
+      "dimension": 768,
+      "effective_rank": 3.68,
+      "rankme": 18.32,
+      "ridge_val_r2": -0.0033
+    },
+    "layer08_cls": {
+      "dimension": 768,
+      "effective_rank": 3.94,
+      "rankme": 17.18,
+      "ridge_val_r2": -0.0019
+    },
+    "layer08_mean": {
+      "dimension": 768,
+      "effective_rank": 3.78,
+      "rankme": 18.93,
+      "ridge_val_r2": -0.003
+    },
+    "layer09_cls": {
+      "dimension": 768,
+      "effective_rank": 4.05,
+      "rankme": 17.59,
+      "ridge_val_r2": -0.0017
+    },
+    "layer09_mean": {
+      "dimension": 768,
+      "effective_rank": 3.89,
+      "rankme": 19.39,
+      "ridge_val_r2": -0.0028
+    },
+    "layer10_cls": {
+      "dimension": 768,
+      "effective_rank": 4.21,
+      "rankme": 18.05,
+      "ridge_val_r2": -0.0016
+    },
+    "layer10_mean": {
+      "dimension": 768,
+      "effective_rank": 4.06,
+      "rankme": 19.94,
+      "ridge_val_r2": -0.0028
+    },
+    "layer11_cls": {
+      "dimension": 768,
+      "effective_rank": 4.34,
+      "rankme": 18.26,
+      "ridge_val_r2": -0.0015
+    },
+    "layer11_mean": {
+      "dimension": 768,
+      "effective_rank": 4.27,
+      "rankme": 20.34,
+      "ridge_val_r2": -0.0028
+    },
+    "layer12_cls": {
+      "dimension": 768,
+      "effective_rank": 4.35,
+      "rankme": 18.24,
+      "ridge_val_r2": -0.0013
+    },
+    "layer12_mean": {
+      "dimension": 768,
+      "effective_rank": 4.48,
+      "rankme": 20.64,
+      "ridge_val_r2": -0.0029
+    },
+    "proj": {
+      "dimension": 64,
+      "effective_rank": 12.44,
+      "rankme": 25.93,
+      "ridge_val_r2": 0.0003
+    }
+  },
+  "subsample": 10000,
+  "verdicts": [
+    "no single culprit stands out \u2014 compare layer_anatomy.png curves for where rank decays."
+  ]
+}
