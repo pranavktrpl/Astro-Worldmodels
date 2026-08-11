@@ -1,5 +1,33 @@
 # Spectra embedding-health diagnostics
 
+Two scripts: `embedding_health.py` (is it collapsed / is information lost /
+is the eval broken — run first) and `collapse_anatomy.py` (where and why —
+run once partial collapse is confirmed).
+
+## collapse_anatomy.py — where does rank/information die?
+
+```bash
+python Evals/spectra_diagnostics/collapse_anatomy.py --checkpoint checkpoints/spectra.pt
+```
+
+Embeds the scan-protocol subsample (10k spectra by default) and reports
+effective rank + ridge redshift validation R² for every representation the
+encoder exposes: each transformer layer under CLS and masked-mean pooling,
+the final post-norm embedding (both poolings), the 64-d projection-head
+output (the space LeJEPA's SIGReg actually regularizes — the probes read
+the 768-d pre-projection embedding it never touched), and the final
+embedding under a training-style contiguous PAD-masked crop instead of the
+full all-real spectrum. Also correlates the probe embedding's top PCs with
+redshift and per-spectrum brightness (median flux / flux std).
+
+Writes `results/<label>/anatomy.json`, `layer_anatomy.png`,
+`pc_covariates.png`, and prints verdicts for the four candidate stories:
+CLS-only collapse (mean pooling rescues), SIGReg-kept-proj-healthy-but-not-
+the-backbone, brightness domination from raw un-normalized flux, and
+train/eval input mismatch.
+
+## embedding_health.py — first-pass triage
+
 Answers, before touching pretraining, why the spectra backbone probes far
 below the AstroCLIP references (redshift R² 0.43 vs 0.98): is the embedding
 collapsed, is the encoder destroying information, or is the eval itself
