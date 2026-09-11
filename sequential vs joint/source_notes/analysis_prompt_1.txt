@@ -1,0 +1,538 @@
+Yes. And I think this comparison may be **more scientifically interesting than simply “JEPA beats CLIP.”**
+
+You effectively have two different hypotheses about *how multimodal structure should be learned*:
+
+$$
+\boxed{
+\text{Unimodal learning}
+\rightarrow
+\text{cross-modal alignment}
+}
+$$
+
+versus
+
+$$
+\boxed{
+\text{representation learning + alignment jointly}
+}
+$$
+
+Call them:
+
+* **Sequential JEPA:** SSL image encoder + SSL spectrum encoder → cross-modal JEPA post-training.
+* **Joint JEPA:** random initialization → image/spectrum pairs trained jointly with the cross-modal JEPA objective.
+
+The core question becomes:
+
+> **Should modalities first learn their own structure and then meet, or should shared structure emerge directly from paired observations?**
+
+That is a genuinely nice representation-learning question.
+
+## The strongest experiment: paired-data efficiency
+
+This is the first thing I would run.
+
+Keep your unimodal pretrained encoders fixed as the starting point for Sequential JEPA, and vary the number of **paired image–spectrum examples** used for cross-modal training:
+
+$$
+1\%,5\%,10\%,25\%,50\%,100\%.
+$$
+
+Train Joint JEPA from scratch using exactly those same pairs.
+
+Plot:
+
+$$
+\text{cross-modal performance}
+\quad\text{vs}\quad
+N_{\text{paired}}.
+$$
+
+Measure retrieval, cross-modal linear predictability, physical-property probes, etc.
+
+Suppose you get:
+
+```text
+                1%    5%    10%    25%    100%
+
+Sequential      0.55  0.72   0.79   0.84    0.87
+Joint           0.08  0.22   0.41   0.70    0.86
+```
+
+That would be a **very strong result**.
+
+The claim isn't merely:
+
+> Pretraining helps.
+
+It's:
+
+> **Learning modality-specific structure independently drastically reduces the amount of paired supervision needed to discover cross-modal structure.**
+
+That is especially relevant because paired multimodal data is usually scarcer than unimodal data.
+
+---
+
+# Experiment 2: What gets destroyed during alignment?
+
+This could be extremely interesting because you have the **before-alignment embeddings** for Sequential JEPA.
+
+Let
+
+$$
+I_0,S_0
+$$
+
+be pretrained unimodal representations, and
+
+$$
+I_1,S_1
+$$
+
+be those same encoders after cross-modal JEPA training.
+
+Compute:
+
+$$
+CKA(I_0,I_1)
+$$
+
+and
+
+$$
+CKA(S_0,S_1).
+$$
+
+Also do:
+
+* kNN neighborhood preservation,
+* pairwise-distance correlation,
+* linear probe performance before/after,
+* effective rank/eigenspectrum before/after.
+
+You're asking:
+
+> **How much does multimodal alignment rewrite the unimodal representation?**
+
+You could discover something like:
+
+$$
+CKA(I_0,I_1)=0.92
+$$
+
+but
+
+$$
+CKA(S_0,S_1)=0.61.
+$$
+
+That would suggest one modality is being used as an **anchor**, while the other reorganizes itself around it.
+
+Which leads directly to another experiment.
+
+---
+
+# Experiment 3: Which modality dominates the shared space?
+
+Image ↔ spectrum is not a symmetric information relationship.
+
+Test:
+
+$$
+I\rightarrow S
+$$
+
+versus
+
+$$
+S\rightarrow I.
+$$
+
+Fit simple held-out linear/ridge predictors:
+
+$$
+\hat S=f(I)
+$$
+
+and
+
+$$
+\hat I=g(S).
+$$
+
+Compare prediction quality for Sequential and Joint JEPA.
+
+You may find:
+
+$$
+R^2(S\rightarrow I) \gg R^2(I\rightarrow S)
+$$
+
+or vice versa.
+
+More importantly, compare how much **each modality changes during training**.
+
+That can reveal:
+
+> Cross-modal JEPA alignment is not necessarily symmetric; the more informative/easier-to-predict modality may determine the geometry of the joint representation.
+
+That's quite interesting for multimodal representation learning generally.
+
+---
+
+# Experiment 4: Shared information vs modality-private information
+
+This is probably my favourite deeper analysis.
+
+Take image representation \(I\).
+
+Train a simple map from spectrum:
+
+$$
+\hat I = f(S).
+$$
+
+Then define:
+
+$$
+I_{\text{shared}}=\hat I
+$$
+
+and
+
+$$
+I_{\text{private}}=I-\hat I.
+$$
+
+Very loosely, this decomposes the image representation into:
+
+$$
+I =
+\underbrace{I_{\text{shared}}}_{\text{predictable from spectrum}}
++
+\underbrace{I_{\text{private}}}_{\text{image-specific}}.
+$$
+
+Do the equivalent for spectra.
+
+Then compare Sequential vs Joint JEPA.
+
+### Hypothesis
+
+Sequential training might produce:
+
+$$
+Z =
+Z_{\text{shared}}
+\oplus
+Z_{\text{private}},
+$$
+
+because SSL pretraining has already learned rich modality-specific structure.
+
+Joint JEPA may instead emphasize:
+
+$$
+Z \approx Z_{\text{shared}}
+$$
+
+because **only information useful for predicting the other modality is consistently rewarded**.
+
+Now probe both components for properties.
+
+For example:
+
+| Representation   | Morphology | Redshift | Metallicity | SFR |
+| ---------------- | ---------: | -------: | ----------: | --: |
+| Shared component |            |          |             |     |
+| Image-private    |            |          |             |     |
+| Spectrum-private |            |          |             |     |
+
+This could give you a genuinely satisfying interpretation of what the two training regimes are doing.
+
+---
+
+# Experiment 5: Does joint training throw away useful unimodal information?
+
+This follows immediately.
+
+Run identical probes on:
+
+$$
+I_{\text{SSL}},
+I_{\text{Sequential}},
+I_{\text{Joint}}
+$$
+
+and similarly for spectra.
+
+Imagine:
+
+| Model           | Cross-modal retrieval | Morphology | Redshift |
+| --------------- | --------------------: | ---------: | -------: |
+| SSL             |                     — |   **0.91** |     0.72 |
+| Sequential JEPA |              **0.88** |       0.89 | **0.81** |
+| Joint JEPA      |                  0.87 |       0.72 |     0.79 |
+
+That is hugely informative.
+
+Both multimodal models might align equally well, but Joint JEPA may sacrifice information that doesn't help the paired prediction objective.
+
+You then get this principle:
+
+> **Cross-modal alignment quality is not equivalent to representation quality.**
+
+Very PriGM.
+
+---
+
+# Experiment 6: freeze vs fine-tune
+
+You should almost certainly add this control.
+
+Have:
+
+$$
+\boxed{\text{SSL → Frozen → Alignment head}}
+$$
+
+$$
+\boxed{\text{SSL → Full fine-tuning}}
+$$
+
+$$
+\boxed{\text{Joint from scratch}}
+$$
+
+This separates two explanations.
+
+### Frozen does well
+
+Then the two SSL spaces were **already structurally compatible**, and you merely needed to discover the mapping between them.
+
+That's fascinating.
+
+### Frozen performs badly but fine-tuning works
+
+Then cross-modal learning must actually **reorganize the representations**.
+
+This gives you a remarkably clean experiment:
+
+> How much representational plasticity is actually necessary for multimodal alignment?
+
+You can even gradually unfreeze:
+
+* projector only,
+* last layer,
+* last 25%,
+* last 50%,
+* all layers.
+
+Then plot alignment performance against trainable parameters / CKA change.
+
+---
+
+# Experiment 7: noisy pairing
+
+This is a really good inductive-bias test.
+
+Artificially corrupt:
+
+$$
+0,5,10,20,40\%
+$$
+
+of image-spectrum pairs.
+
+Compare Sequential and Joint.
+
+My hypothesis would be that pretrained representations act as a prior:
+
+$$
+\text{strong unimodal structure}
++
+\text{noisy alignment signal}
+$$
+
+might be more robust than learning everything from the noisy pair relation.
+
+If Sequential JEPA degrades much more slowly, you can argue:
+
+> **Unimodal pretraining regularizes multimodal alignment against imperfect correspondence.**
+
+Very generalizable result.
+
+---
+
+# Experiment 8: alignment dynamics
+
+Save checkpoints during cross-modal training and make curves for:
+
+$$
+\text{cross-modal retrieval}
+$$
+
+$$
+\text{cross-modal CKA}
+$$
+
+$$
+\text{unimodal CKA to initialization}
+$$
+
+$$
+\text{linear probe performance}
+$$
+
+against training steps.
+
+You might see Sequential JEPA do:
+
+```text
+good unimodal geometry
+        ↓
+rapid cross-modal alignment
+        ↓
+small representation movement
+```
+
+whereas Joint JEPA does:
+
+```text
+random
+  ↓
+learn modality structure
+  ↓
+discover shared factors
+  ↓
+align
+```
+
+This would make a beautiful figure.
+
+---
+
+# There's one critical fairness issue
+
+You **cannot** simply report:
+
+> Sequential JEPA = 90%
+> Joint JEPA = 80%
+> therefore sequential training is better.
+
+Because Sequential JEPA has already consumed additional:
+
+* data,
+* optimization steps,
+* compute.
+
+You need to disentangle **initialization/pretraining** from **total compute**.
+
+So ideally have at least:
+
+| Model             | Unimodal SSL | Paired training |
+| ----------------- | ------------ | --------------- |
+| Joint             | ❌            | ✓               |
+| Sequential frozen | ✓            | head only       |
+| Sequential FT     | ✓            | ✓               |
+
+And when possible report:
+
+* paired samples consumed,
+* total samples consumed,
+* paired training compute,
+* total compute.
+
+Your strongest conclusion will likely be about **paired-data efficiency**, rather than absolute computational efficiency.
+
+---
+
+# If I were choosing only four experiments
+
+Given the PriGM paper constraint, I wouldn't run everything.
+
+I'd build the paper around:
+
+### **1. Pair-efficiency curves**
+
+The main result.
+
+$$
+\boxed{\text{How many paired samples are required?}}
+$$
+
+### **2. Representation preservation**
+
+CKA + kNN before/after alignment.
+
+$$
+\boxed{\text{How much does alignment rewrite each modality?}}
+$$
+
+### **3. Shared/private information**
+
+Cross-modal linear prediction residual + probes.
+
+$$
+\boxed{\text{What information survives joint learning?}}
+$$
+
+### **4. Frozen vs fine-tuned alignment**
+
+Tests whether existing unimodal spaces are already compatible.
+
+$$
+\boxed{\text{Does multimodal learning require representation rewriting?}}
+$$
+
+Those four together tell one coherent story.
+
+---
+
+# And I think this changes the paper framing
+
+Instead of merely:
+
+> **CLIP vs JEPA for astronomical multimodal learning**
+
+you could frame the JEPA side around:
+
+# **When Should Modalities Meet? Sequential vs Joint Predictive Multimodal Representation Learning**
+
+The conceptual setup is:
+
+$$
+\textbf{Sequential:}\qquad
+X\rightarrow Z_X,
+\quad
+Y\rightarrow Z_Y
+\qquad\text{then}\qquad
+Z_X\leftrightarrow Z_Y
+$$
+
+versus
+
+$$
+\textbf{Joint:}\qquad
+(X,Y)
+\rightarrow
+(Z_X,Z_Y)
+$$
+
+simultaneously.
+
+And the underlying question becomes:
+
+> **Does effective multimodal representation learning require jointly discovering the modality representations, or can independently learned representations be efficiently composed through predictive alignment?**
+
+This also slots beautifully into the earlier CLIP-vs-JEPA idea. You effectively get a **2×2 conceptual grid**:
+
+|                 | **Joint learning** | **Pretrain → align**            |
+| --------------- | ------------------ | ------------------------------- |
+| **Contrastive** | CLIP-style         | pretrained CLIP-style alignment |
+| **Predictive**  | Joint X-JEPA       | Sequential X-JEPA               |
+
+You don't necessarily have to train all four. But that grid gives the paper a much broader conceptual framework.
+
+And if your existing result is that **SSL-pretrained → JEPA alignment works much better with few pairs than joint-from-scratch JEPA**, I would seriously consider making *that*, rather than CLIP-vs-JEPA, the main paper story. It asks a cleaner principles question: **what should be learned before modalities are forced to communicate?**

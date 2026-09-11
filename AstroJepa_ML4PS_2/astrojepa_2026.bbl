@@ -1,0 +1,92 @@
+\begin{thebibliography}{10}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Assran et~al.(2023)Assran, Duval, Misra, Bojanowski, Vincent, Rabbat,
+  LeCun, and Ballas]{assran2023ijepa}
+Mahmoud Assran, Quentin Duval, Ishan Misra, Piotr Bojanowski, Pascal Vincent,
+  Michael Rabbat, Yann LeCun, and Nicolas Ballas.
+\newblock Self-supervised learning from images with a joint-embedding
+  predictive architecture.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}, 2023.
+
+\bibitem[Balestriero and LeCun(2025)]{balestriero2025lejepa}
+Randall Balestriero and Yann LeCun.
+\newblock {LeJEPA}: Provable and scalable self-supervised learning without the
+  heuristics.
+\newblock \emph{arXiv preprint arXiv:2511.08544}, 2025.
+
+\bibitem[{DESI Collaboration}(2024)]{desi2024edr}
+{DESI Collaboration}.
+\newblock The early data release of the dark energy spectroscopic instrument.
+\newblock \emph{The Astronomical Journal}, 168\penalty0 (2):\penalty0 58, 2024.
+
+\bibitem[Dey et~al.(2019)Dey, Schlegel, Lang, et~al.]{dey2019legacy}
+Arjun Dey, David~J. Schlegel, Dustin Lang, et~al.
+\newblock Overview of the {DESI} legacy imaging surveys.
+\newblock \emph{The Astronomical Journal}, 157\penalty0 (5):\penalty0 168,
+  2019.
+
+\bibitem[Hahn et~al.(2023)Hahn, Kwon, Tojeiro, et~al.]{hahn2023provabgs}
+ChangHoon Hahn, K.~J. Kwon, Rita Tojeiro, et~al.
+\newblock The {DESI} {PRO}babilistic value-added bright galaxy survey
+  ({PROVABGS}) mock challenge.
+\newblock \emph{The Astrophysical Journal}, 945\penalty0 (1):\penalty0 16,
+  2023.
+
+\bibitem[Leung and Bovy(2024)]{leung2024galaxy10}
+W.~Henry Leung and Jo~Bovy.
+\newblock {Galaxy10 DECaLS}, 2024.
+
+\bibitem[Oquab et~al.(2024)Oquab, Darcet, Moutakanni, Vo, Szafraniec, Khalidov,
+  Fernandez, Haziza, Massa, El-Nouby, Assran, Ballas, Galuba, Howes, Huang, Li,
+  Misra, Rabbat, Sharma, Synnaeve, Xu, J{\'e}gou, Mairal, Labatut, Joulin, and
+  Bojanowski]{oquab2023dinov2}
+Maxime Oquab, Timoth{\'e}e Darcet, Th{\'e}o Moutakanni, Huy~V. Vo, Marc
+  Szafraniec, Vasil Khalidov, Pierre Fernandez, Daniel Haziza, Francisco Massa,
+  Alaa El-Nouby, Mahmoud Assran, Nicolas Ballas, Wojciech Galuba, Russell
+  Howes, Po-Yao Huang, Shang-Wen Li, Ishan Misra, Michael Rabbat, Vasu Sharma,
+  Gabriel Synnaeve, Hu~Xu, Herv{\'e} J{\'e}gou, Julien Mairal, Patrick Labatut,
+  Armand Joulin, and Piotr Bojanowski.
+\newblock {DINOv2}: Learning robust visual features without supervision.
+\newblock In \emph{Transactions on Machine Learning Research}, 2024.
+
+\bibitem[Parker et~al.(2024)Parker, Lanusse, Golkar, Sarra, Cranmer, Bietti,
+  Eickenberg, Krawezik, McCabe, Ohana, Pettee, Regaldo-Saint~Blancard,
+  Tesileanu, Cho, and Ho]{parker2024astroclip}
+Liam Parker, Fran\c{c}ois Lanusse, Siavash Golkar, Leopoldo Sarra, Miles
+  Cranmer, Alberto Bietti, Michael Eickenberg, Geraud Krawezik, Michael McCabe,
+  Ruben Ohana, Mariel Pettee, Bruno Regaldo-Saint~Blancard, Tiberiu Tesileanu,
+  Kyunghyun Cho, and Shirley Ho.
+\newblock {AstroCLIP}: A cross-modal foundation model for galaxies.
+\newblock \emph{Monthly Notices of the Royal Astronomical Society},
+  531\penalty0 (4):\penalty0 4990--5001, 2024.
+
+\bibitem[Parker et~al.(2025)Parker, Lanusse, Shen, Liu, Hehir, Sarra, Meyer,
+  Bowles, Wagner-Carena, Qu, Golkar, Bietti, Bourfoune, Casserau, Cornette,
+  Hirashima, Krawezik, Ohana, Lourie, McCabe, Morel, Mukhopadhyay, Pettee,
+  Regaldo-Saint~Blancard, Cho, Cranmer, and Ho]{parker2025aion}
+Liam Parker, Fran{\c c}ois Lanusse, Jeff Shen, Ollie Liu, Tom Hehir, Leopoldo
+  Sarra, Lucas Meyer, Micah Bowles, Sebastian Wagner-Carena, Helen Qu, Siavash
+  Golkar, Alberto Bietti, Hatim Bourfoune, Nathan Casserau, Pierre Cornette,
+  Keiya Hirashima, Geraud Krawezik, Ruben Ohana, Nicholas Lourie, Michael
+  McCabe, Rudy Morel, Payel Mukhopadhyay, Mariel Pettee, Bruno
+  Regaldo-Saint~Blancard, Kyunghyun Cho, Miles Cranmer, and Shirley Ho.
+\newblock {AION-1}: Omnimodal foundation model for astronomical sciences.
+\newblock \emph{arXiv preprint arXiv:2510.17960}, 2025.
+
+\bibitem[Radford et~al.(2021)Radford, Kim, Hallacy, Ramesh, Goh, Agarwal,
+  Sastry, Askell, Mishkin, Clark, Krueger, and Sutskever]{radford2021clip}
+Alec Radford, Jong~Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh,
+  Sandhini Agarwal, Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark,
+  Gretchen Krueger, and Ilya Sutskever.
+\newblock Learning transferable visual models from natural language
+  supervision.
+\newblock In \emph{Proceedings of the 38th International Conference on Machine
+  Learning}, 2021.
+
+\end{thebibliography}

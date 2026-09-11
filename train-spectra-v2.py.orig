@@ -1,0 +1,1015 @@
+import os
+import argparse
+from datetime import timedelta
+
+import random
+from dotenv import load_dotenv
+
+load_dotenv()
+
+import torch
+import torch.nn as nn
+import torch.distributed as dist
+from torch.amp import GradScaler, autocast
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader
+
+from data.dataloaders import DesiSpectraDataset  # Spectra-specific: stream DESI patch crops instead of galaxy image crops.
+from models.resnet9 import MLP #Resnet9, 
+
+import lejepa
+
+from configs.config import TrainConfig
+
+from dataclasses import dataclass, asdict
+from pathlib import Path
+from tqdm.auto import tqdm
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
+
+
+@dataclass
+class SpectraTrainConfig(TrainConfig):
+    model_name: str = "astrojepa_spectra_desi_v2_global_local_lejepa"
+    pretrained_backbone: bool = False
+
+    # Read directly from the external read-only dataset tree; no spectra are copied into this repository.
+    dataset_name: str = "/mnt/datasets/utbd_pranav/desi_edr_sv3/mmu_desi_edr_sv3/dataset"
+    columns: list[str] = None
+    spectra_dataset_name: str = "/mnt/datasets/utbd_pranav/desi_edr_sv3/mmu_desi_edr_sv3/dataset"
+    spectra_columns: list[str] = None
+    raw_num_spectra: int = 1_126_441
+    train_num_spectra: int = 1_103_874
+    audited_default_steps_per_epoch: int = 17_239
+    split_seed: int = 42
+
+    spectra_num_pixels: int = 7781
+    spectra_patch_size: int = 20
+    spectra_num_patches: int = 389
+    spectra_num_views: int = 2
+    spectra_mask_ratio: float = 0.30
+    spectra_mask_span: tuple[int, int] = (2, 12)
+    spectra_disjoint_view_masks: bool = True
+    spectra_min_valid_patch_fraction: float = 0.50
+    spectra_noise_scale: float = 0.50
+    spectra_max_normalized_noise_std: float = 3.0
+
+    spectra_embed_dim: int = 768
+    spectra_depth: int = 12
+    spectra_num_heads: int = 12
+    spectra_mlp_ratio: float = 4.0
+    spectra_dropout: float = 0.0
+    spectra_pooling: str = "cls"
+    spectra_local_proj_dim: int = 64
+
+    bs: int = 16
+    num_workers: int = 4
+    # Global shuffle target. build_train_loader divides this across every DDP
+    # rank and DataLoader worker so each worker does not allocate 50k samples.
+    shuffle_buffer_size: int = 50_000
+    dataloader_timeout_seconds: int = 1_800
+    data_sharding_strategy: str = "balanced_files_per_rank_hf_workers"
+
+    Vg: int = 2
+    Vl: int = 0
+    lambd: float = 0.05
+    local_lambd: float = 0.05
+    local_loss_weight: float = 1.0
+    local_sigreg_num_points: int = 17
+    local_sigreg_num_slices: int = 256
+    local_sigreg_num_positions: int = 32
+    grad_clip_norm: float = 1.0
+
+    epochs: int = 10
+    max_steps: int | None = None
+
+    project: str = "astrojepa"
+    run_name: str = "SpectraV2_DESI_GlobalLocalLeJEPA_MeanStd_CorrectedEpochs"
+    save_dir: str = "./checkpoints/SpectraV2_DESI_GlobalLocalLeJEPA_MeanStd_CorrectedEpochs"
+    resume_path: str | None = None
+    wandb_run_id: str | None = None
+    wandb_resume: str = "allow"
+    wandb_mode: str = "online"
+    keep_last_periodic_checkpoints: int = 2
+
+    def __post_init__(self):
+        if self.columns is None:
+            self.columns = ["spectrum", "object_id"]
+        if self.spectra_columns is None:
+            self.spectra_columns = ["spectrum", "object_id"]
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train the DESI spectrum v2 LeJEPA backbone")
+    parser.add_argument("--epochs", type=int)
+    parser.add_argument("--max-steps", type=int)
+    parser.add_argument("--batch-size", type=int)
+    parser.add_argument("--num-workers", type=int)
+    parser.add_argument("--run-name")
+    parser.add_argument("--save-dir")
+    parser.add_argument("--resume")
+    parser.add_argument("--wandb-mode", choices=("online", "offline", "disabled"))
+    return parser.parse_args()
+
+
+def apply_cli_overrides(cfg, args):
+    overrides = {
+        "epochs": args.epochs,
+        "max_steps": args.max_steps,
+        "bs": args.batch_size,
+        "num_workers": args.num_workers,
+        "run_name": args.run_name,
+        "save_dir": args.save_dir,
+        "resume_path": args.resume,
+        "wandb_mode": args.wandb_mode,
+    }
+    for name, value in overrides.items():
+        if value is not None:
+            setattr(cfg, name, value)
+    return cfg
+
+
+######################################################### fast paths #########################################################
+torch.backends.cudnn.benchmark = True
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.set_float32_matmul_precision("high")
+
+
+######################################################### DDP Setup + Dataloading #########################################################
+def setup_ddp():
+    dist.init_process_group(
+        backend="nccl",
+        timeout=timedelta(minutes=60),
+    )
+
+    world_size = dist.get_world_size()
+    rank = dist.get_rank()   #Which process this is globally, so rank is an init in the dataset object we created, cause every GPU gets a custom dataset object
+    local_rank = int(os.environ["LOCAL_RANK"])  #Just which GPU this is on the node, same as rank, no need honestly
+
+    torch.cuda.set_device(local_rank)  #Binds the process to the GPU, for if we stop mid way, and we want to resume, the process no is not mixed and we stick to same GPU always
+    device = torch.device("cuda", local_rank)
+
+    return world_size, rank, local_rank, device
+
+def seed_everything(seed, rank):
+    seed = seed + rank
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+def is_main_process(rank):
+    return rank == 0         #So we log only one main process, not all
+    
+def build_train_loader(cfg, world_size, rank):
+    workers_per_rank = max(1, cfg.num_workers)
+    total_readers = world_size * workers_per_rank
+    per_worker_shuffle_buffer_size = max(
+        1,
+        (cfg.shuffle_buffer_size + total_readers - 1) // total_readers,
+    )
+    train_ds = DesiSpectraDataset(
+        split="train",
+        dataset=cfg.spectra_dataset_name,
+        columns=cfg.spectra_columns,
+        shuffle=True,
+        world_size=world_size,
+        rank=rank,
+        num_views=cfg.spectra_num_views,
+        patch_size=cfg.spectra_patch_size,
+        expected_num_pixels=cfg.spectra_num_pixels,
+        mask_ratio=cfg.spectra_mask_ratio,
+        mask_span=cfg.spectra_mask_span,
+        disjoint_view_masks=cfg.spectra_disjoint_view_masks,
+        min_valid_patch_fraction=cfg.spectra_min_valid_patch_fraction,
+        noise_scale=cfg.spectra_noise_scale,
+        max_normalized_noise_std=cfg.spectra_max_normalized_noise_std,
+        split_seed=cfg.split_seed,
+        shuffle_buffer_size=per_worker_shuffle_buffer_size,
+        loader_num_workers=workers_per_rank,
+    )
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=cfg.bs,
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        # Workers must be recreated so train_ds.set_epoch() reaches their dataset copies.
+        persistent_workers=False,
+        prefetch_factor=2 if cfg.num_workers > 0 else None,
+        timeout=cfg.dataloader_timeout_seconds if cfg.num_workers > 0 else 0,
+        drop_last=True,
+    )
+    return train_ds, train_loader
+
+# def build_val_loader(cfg, world_size, rank):
+#     val_ds = DesiSpectraDataset(
+#         split="validation", dataset=cfg.dataset_name, columns=cfg.columns, shuffle=False, world_size=1, rank=0, Vg=cfg.Vg, Vl=cfg.Vl
+#     )
+#     val_loader = DataLoader(
+#         val_ds, batch_size=cfg.eval_bs, num_workers=cfg.num_workers, pin_memory=True, persistent_workers=(cfg.num_workers > 0),
+#     )
+#     return val_ds, val_loader
+
+
+######################################################### Model = Backbone + Projector #########################################################
+class SpectrumTransformerEncoderV2(nn.Module):
+    def __init__(
+        self,
+        proj_dim: int,
+        patch_size: int = 20,
+        num_patches: int = 389,
+        embed_dim: int = 768,
+        depth: int = 12,
+        num_heads: int = 12,
+        mlp_ratio: float = 4.0,
+        dropout: float = 0.0,
+        pooling: str = "cls",
+        local_proj_dim: int = 64,
+    ):
+        super().__init__()
+
+        self.patch_size = patch_size
+        self.num_patches = num_patches
+        self.embed_dim = embed_dim
+        self.pooling = pooling
+
+        self.patch_embed = nn.Linear(patch_size, embed_dim)
+        self.validity_embed = nn.Linear(patch_size, embed_dim, bias=False)
+
+        self.mask_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=embed_dim,
+            nhead=num_heads,
+            dim_feedforward=int(embed_dim * mlp_ratio),
+            dropout=dropout,
+            activation="gelu",
+            batch_first=True,
+            norm_first=True,
+        )
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=depth)
+        self.norm = nn.LayerNorm(embed_dim)
+
+        self.global_proj = MLP(
+            in_channels=embed_dim,
+            hidden_channels=[2 * embed_dim, 2 * embed_dim, proj_dim],
+            norm_layer="batch_norm",
+        )
+        self.local_proj = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim),
+            nn.GELU(),
+            nn.LayerNorm(embed_dim),
+            nn.Linear(embed_dim, local_proj_dim),
+        )
+
+        self._init_spectrum_tokens()
+
+    def _init_spectrum_tokens(self):
+        nn.init.normal_(self.cls_token, std=0.02)
+        nn.init.normal_(self.mask_token, std=0.02)
+        nn.init.normal_(self.pos_embed, std=0.02)
+        nn.init.zeros_(self.validity_embed.weight)
+
+    def _pool(self, hidden, token_mask):
+        if self.pooling == "cls":
+            return hidden[:, 0]
+
+        if self.pooling == "masked_mean":
+            patch_hidden = hidden[:, 1:]
+            weights = token_mask[:, 1:].to(dtype=patch_hidden.dtype).unsqueeze(-1)
+            denom = weights.sum(dim=1).clamp_min(1.0)
+            return (patch_hidden * weights).sum(dim=1) / denom
+
+        raise ValueError(f"Unknown spectra pooling mode: {self.pooling}")
+
+    def forward(self, views, valid_pixels, jepa_masks):
+        # views [B, V, N, P], valid_pixels [B, N, P], jepa_masks [B, V, N].
+        B, V, N, P = views.shape
+        if N != self.num_patches:
+            raise ValueError(f"Expected {self.num_patches} spectra patches, got {N}")
+        if P != self.patch_size:
+            raise ValueError(f"Expected spectra patch size {self.patch_size}, got {P}")
+        if valid_pixels.shape != (B, N, P):
+            raise ValueError(f"Unexpected valid-pixel shape: {tuple(valid_pixels.shape)}")
+        if jepa_masks.shape != (B, V, N):
+            raise ValueError(f"Unexpected JEPA-mask shape: {tuple(jepa_masks.shape)}")
+
+        flat_views = views.flatten(0, 1)
+        flat_valid_pixels = (
+            valid_pixels[:, None]
+            .expand(B, V, N, P)
+            .reshape(B * V, N, P)
+            .bool()
+        )
+        flat_jepa_masks = jepa_masks.flatten(0, 1).bool()
+
+        tokens = self.patch_embed(flat_views)
+        validity_offsets = self.validity_embed(
+            flat_valid_pixels.to(dtype=tokens.dtype) - 1.0
+        )
+        tokens = tokens + validity_offsets
+        mask_tokens = self.mask_token.expand(tokens.shape[0], tokens.shape[1], -1)
+        tokens = torch.where(flat_jepa_masks.unsqueeze(-1), mask_tokens, tokens)
+
+        cls_tokens = self.cls_token.expand(tokens.shape[0], -1, -1)
+        tokens = torch.cat([cls_tokens, tokens], dim=1)
+
+        patch_attendable = flat_valid_pixels.any(dim=-1)
+        cls_attendable = torch.ones(
+            patch_attendable.shape[0],
+            1,
+            dtype=torch.bool,
+            device=patch_attendable.device,
+        )
+        token_attendable = torch.cat([cls_attendable, patch_attendable], dim=1)
+
+        tokens = tokens + self.pos_embed[:, : tokens.shape[1]]
+        key_padding_mask = ~token_attendable
+
+        hidden = self.transformer(tokens, src_key_padding_mask=key_padding_mask)
+        hidden = self.norm(hidden)
+
+        flat_global_emb = self._pool(hidden, token_attendable)
+        flat_patch_emb = hidden[:, 1:]
+        flat_global_proj = self.global_proj(flat_global_emb)
+        flat_local_proj = self.local_proj(flat_patch_emb)
+
+        global_emb = flat_global_emb.reshape(B, V, -1).transpose(0, 1)
+        global_proj = flat_global_proj.reshape(B, V, -1).transpose(0, 1)
+        patch_emb = flat_patch_emb.reshape(B, V, N, -1).permute(1, 0, 2, 3)
+        patch_proj = flat_local_proj.reshape(B, V, N, -1).permute(1, 0, 2, 3)
+        return global_emb, global_proj, patch_emb, patch_proj
+    
+        
+def init_projector_weights(m):                      #Kaiming weight initialization - Only for the projector; the spectra encoder uses its own transformer initialization.
+    if isinstance(m, nn.Linear):
+        nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+    elif isinstance(m, nn.BatchNorm1d):
+        if m.weight is not None:
+            nn.init.ones_(m.weight)
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+
+def build_model(cfg, device, local_rank):
+    model = SpectrumTransformerEncoderV2(
+        proj_dim=cfg.proj_dim,
+        patch_size=cfg.spectra_patch_size,
+        num_patches=cfg.spectra_num_patches,
+        embed_dim=cfg.spectra_embed_dim,
+        depth=cfg.spectra_depth,
+        num_heads=cfg.spectra_num_heads,
+        mlp_ratio=cfg.spectra_mlp_ratio,
+        dropout=cfg.spectra_dropout,
+        pooling=cfg.spectra_pooling,
+        local_proj_dim=cfg.spectra_local_proj_dim,
+    )
+    model.global_proj.apply(init_projector_weights)
+    model.local_proj.apply(init_projector_weights)
+    model = model.to(device)
+    model = DDP(model, 
+                device_ids=[local_rank], 
+                output_device=local_rank,
+                broadcast_buffers=False,
+                gradient_as_bucket_view=True,
+                static_graph=True,
+    )
+    return model
+
+######################################################### Custom LEJEPA Loss + Training requirements #########################################################
+def build_sigreg(num_points, num_slices, device):
+    univariate_test = lejepa.univariate.EppsPulley(
+        n_points=num_points
+    )
+    sigreg_fn = lejepa.multivariate.SlicingUnivariateTest(
+        univariate_test=univariate_test,
+        num_slices=num_slices,
+    )
+    return sigreg_fn.to(device)
+
+def select_local_sigreg_positions(valid_target_patches, num_positions, global_step):
+    # Require every spectrum on every rank to have a scientifically valid target at a sampled position.
+    position_is_valid = valid_target_patches.all(dim=0).to(dtype=torch.int32)
+    if dist.is_available() and dist.is_initialized():
+        dist.all_reduce(position_is_valid, op=dist.ReduceOp.MIN)
+    candidates = torch.nonzero(position_is_valid.bool(), as_tuple=False).flatten()
+    if candidates.numel() == 0:
+        raise RuntimeError("No wavelength position is valid across the distributed batch")
+
+    generator = torch.Generator(device=candidates.device)
+    generator.manual_seed(global_step)
+    count = min(num_positions, candidates.numel())
+    order = torch.randperm(candidates.numel(), generator=generator, device=candidates.device)
+    return candidates[order[:count]]
+
+
+def compute_lejepa_loss(
+    global_proj,
+    patch_proj,
+    valid_target_patches,
+    jepa_masks,
+    global_sigreg_fn,
+    local_sigreg_fn,
+    global_lambd,
+    local_lambd,
+    local_loss_weight,
+    local_sigreg_num_positions,
+    global_step,
+):
+    global_center = global_proj.mean(dim=0)
+    global_sim = (global_proj - global_center.unsqueeze(0)).square().mean()
+    global_sigreg = global_sigreg_fn(global_proj)
+    global_loss = (1 - global_lambd) * global_sim + global_lambd * global_sigreg
+
+    local_center = patch_proj.mean(dim=0)
+    local_squared_error = (patch_proj - local_center.unsqueeze(0)).square().mean(dim=-1)
+    locally_eligible = valid_target_patches & ~jepa_masks.all(dim=1)
+    local_denominator = locally_eligible.sum().clamp_min(1) * patch_proj.shape[0]
+    local_sim = (
+        local_squared_error * locally_eligible.unsqueeze(0)
+    ).sum() / local_denominator
+
+    sigreg_positions = select_local_sigreg_positions(
+        valid_target_patches,
+        local_sigreg_num_positions,
+        global_step,
+    )
+    local_sigreg_samples = (
+        patch_proj[:, :, sigreg_positions, :]
+        .permute(0, 2, 1, 3)
+        .reshape(-1, patch_proj.shape[1], patch_proj.shape[-1])
+    )
+    local_sigreg = local_sigreg_fn(local_sigreg_samples)
+    local_loss = (1 - local_lambd) * local_sim + local_lambd * local_sigreg
+
+    total_loss = global_loss + local_loss_weight * local_loss
+    return {
+        "loss": total_loss,
+        "global_loss": global_loss,
+        "global_sim": global_sim,
+        "global_sigreg": global_sigreg,
+        "local_loss": local_loss,
+        "local_sim": local_sim,
+        "local_sigreg": local_sigreg,
+        "local_sigreg_positions": torch.tensor(
+            sigreg_positions.numel(),
+            device=global_proj.device,
+            dtype=global_proj.dtype,
+        ),
+    }
+
+
+def build_optimizer_and_scheduler(cfg, model):
+    decay_params = []
+    no_decay_params = []
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad:
+            continue
+        no_decay = (
+            parameter.ndim <= 1
+            or name.endswith(".bias")
+            or "cls_token" in name
+            or "mask_token" in name
+            or "pos_embed" in name
+        )
+        (no_decay_params if no_decay else decay_params).append(parameter)
+
+    opt = torch.optim.AdamW(
+        [
+            {"params": decay_params, "weight_decay": cfg.wd},
+            {"params": no_decay_params, "weight_decay": 0.0},
+        ],
+        lr=cfg.lr,
+    )
+
+    warmup = LinearLR(
+        opt,
+        start_factor=0.01,
+        total_iters=cfg.warmup_steps,
+    )
+
+    cosine = CosineAnnealingLR(
+        opt,
+        T_max=max(1, cfg.total_steps - cfg.warmup_steps),
+        eta_min=cfg.min_lr,
+    )
+
+    scheduler = SequentialLR(
+        opt,
+        schedulers=[warmup, cosine],
+        milestones=[cfg.warmup_steps],
+    )
+
+    return opt, scheduler
+
+def build_amp(cfg):
+    if cfg.amp_dtype == "bf16":
+        amp_dtype = torch.bfloat16
+        scaler = GradScaler("cuda", enabled=False)
+    elif cfg.amp_dtype == "fp16":
+        amp_dtype = torch.float16
+        scaler = GradScaler("cuda", enabled=True)
+    else:
+        raise ValueError(f"Unknown amp_dtype: {cfg.amp_dtype}")
+
+    return amp_dtype, scaler
+
+######################################################### Checkpoint loading + saving + other utilities ##########################################################
+def count_parameters(module):
+    total = sum(p.numel() for p in module.parameters())
+    trainable = sum(p.numel() for p in module.parameters() if p.requires_grad)
+    return total, trainable
+
+def save_checkpoint(
+    cfg,
+    model,
+    optimizer,
+    scheduler,
+    scaler,
+    epoch,
+    step_in_epoch,
+    global_step,
+    path,
+):
+    ckpt = {
+        "model": model.module.state_dict() if isinstance(model, DDP) else model.state_dict(),
+        "optimizer": optimizer.state_dict(),
+        "scheduler": scheduler.state_dict() if scheduler is not None else None,
+        "scaler": scaler.state_dict() if scaler is not None else None,
+        "epoch": epoch,
+        "step_in_epoch": step_in_epoch,
+        "global_step": global_step,
+        "cfg": asdict(cfg),
+        "python_rng": random.getstate(),
+        "torch_rng": torch.get_rng_state(),
+        "cuda_rng": torch.cuda.get_rng_state_all(),
+    }
+    tmp_path = f"{path}.tmp"
+    torch.save(ckpt, tmp_path)
+    os.replace(tmp_path, path)
+
+def prune_periodic_checkpoints(save_dir, keep_last):
+    if keep_last < 1:
+        raise ValueError("keep_last_periodic_checkpoints must be at least 1")
+
+    periodic_checkpoints = []
+    for path in Path(save_dir).glob("step_*.pt"):
+        step_text = path.stem.removeprefix("step_")
+        if step_text.isdigit():
+            periodic_checkpoints.append((int(step_text), path))
+
+    periodic_checkpoints.sort(key=lambda item: item[0])
+    removed = []
+    for _, path in periodic_checkpoints[:-keep_last]:
+        path.unlink()
+        removed.append(path)
+    return removed
+
+def optimizer_to(optimizer, device):
+    for state in optimizer.state.values():
+        for k, v in state.items():
+            if torch.is_tensor(v):
+                state[k] = v.to(device)
+
+def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, device="cuda"):
+    # This loader only accepts checkpoints produced by this trusted training script.
+    ckpt = torch.load(path, map_location="cpu", weights_only=False)
+
+    if isinstance(model, DDP):
+        model.module.load_state_dict(ckpt["model"])
+    else:
+        model.load_state_dict(ckpt["model"])
+
+    if optimizer is not None and ckpt.get("optimizer") is not None:
+        optimizer.load_state_dict(ckpt["optimizer"])
+        optimizer_to(optimizer, device)
+
+    if scheduler is not None and ckpt.get("scheduler") is not None:
+        scheduler.load_state_dict(ckpt["scheduler"])
+
+    if scaler is not None and ckpt.get("scaler") is not None:
+        scaler.load_state_dict(ckpt["scaler"])
+
+    if "python_rng" in ckpt:
+        random.setstate(ckpt["python_rng"])
+    if "torch_rng" in ckpt:
+        torch.set_rng_state(ckpt["torch_rng"].cpu())
+    if "cuda_rng" in ckpt:
+        torch.cuda.set_rng_state_all([x.cpu() for x in ckpt["cuda_rng"]])
+
+    start_epoch = ckpt.get("epoch", 0)
+    step_in_epoch = ckpt.get("step_in_epoch", 0)
+    global_step = ckpt.get("global_step", 0)
+
+    return start_epoch, step_in_epoch, global_step
+
+def setup_wandb(cfg, rank):
+    if not is_main_process(rank):
+        return None
+
+    # Spectra-specific: keep W&B lazy so importing/testing the spectra model does not block on logging setup.
+    import wandb
+
+    run = wandb.init(
+        entity=cfg.entity,
+        project=cfg.project,
+        name=cfg.run_name,
+        id=cfg.wandb_run_id,
+        resume=cfg.wandb_resume if cfg.wandb_run_id is not None else None,
+        config=asdict(cfg),
+        mode=cfg.wandb_mode,
+    )
+    return run
+
+def ddp_mean(x, world_size):
+    if not torch.is_tensor(x):
+        x = torch.tensor(x, device="cuda")
+    y = x.detach().clone()
+    dist.all_reduce(y, op=dist.ReduceOp.SUM)
+    y /= world_size
+    return y
+
+def feature_std_stats(x):   #Only to monitor collapse of embeddings and projections
+    # x: [V, B, D]
+    x_flat = x.transpose(0, 1).reshape(-1, x.size(-1))   # [B*V, D]
+    std_per_dim = x_flat.std(dim=0)
+    mean_std = std_per_dim.mean()
+    min_std = std_per_dim.min()
+    max_std = std_per_dim.max()
+    return mean_std, min_std, max_std
+
+
+def token_feature_std_stats(x):
+    # x [V, B, N, D]: measure object-to-object variation at fixed wavelength positions.
+    std_per_position_and_dim = x.float().std(dim=1, correction=0)
+    return (
+        std_per_position_and_dim.mean(),
+        std_per_position_and_dim.min(),
+        std_per_position_and_dim.max(),
+    )
+
+######################################################### Main training loop #########################################################
+
+def main():
+    world_size, rank, local_rank, device = setup_ddp()
+    seed_everything(seed=42, rank=rank)
+
+    if is_main_process(rank):
+        print(f"world_size = {world_size}, rank = {rank}, local_rank = {local_rank}")
+
+    cfg = apply_cli_overrides(SpectraTrainConfig(), parse_args())
+    if cfg.grad_accum_steps != 1:
+        raise ValueError("Spectrum v2 currently requires grad_accum_steps == 1")
+    if not Path(cfg.spectra_dataset_name).is_dir():
+        raise FileNotFoundError(f"DESI dataset directory not found: {cfg.spectra_dataset_name}")
+    default_topology = world_size == 4 and cfg.num_workers == 4 and cfg.bs == 16
+    if default_topology:
+        cfg.steps_per_epoch = cfg.audited_default_steps_per_epoch
+        cfg.safe_samples_per_rank_per_epoch = cfg.steps_per_epoch * cfg.bs
+    else:
+        cfg.safe_samples_per_rank_per_epoch = max(1, cfg.train_num_spectra // world_size)
+        cfg.steps_per_epoch = cfg.safe_samples_per_rank_per_epoch // cfg.bs
+    cfg.total_steps = cfg.epochs * cfg.steps_per_epoch
+    if cfg.max_steps is not None:
+        cfg.total_steps = min(cfg.total_steps, cfg.max_steps)
+    
+    if is_main_process(rank):
+        print(f"steps_per_epoch = {cfg.steps_per_epoch}")
+        print(f"total_steps = {cfg.total_steps}")
+
+    train_ds, train_loader = build_train_loader(cfg, world_size, rank)
+    # val_ds, val_loader = build_val_loader(cfg, world_size, rank)
+
+    model = build_model(cfg, device, local_rank)
+    raw_model = model.module if isinstance(model, DDP) else model
+
+    global_proj_total, global_proj_trainable = count_parameters(raw_model.global_proj)
+    local_proj_total, local_proj_trainable = count_parameters(raw_model.local_proj)
+    proj_total = global_proj_total + local_proj_total
+    proj_trainable = global_proj_trainable + local_proj_trainable
+    model_total, model_trainable = count_parameters(raw_model)
+    backbone_total = model_total - proj_total
+    backbone_trainable = model_trainable - proj_trainable
+
+    if is_main_process(rank):
+        print(f"spectra encoder params: {backbone_total:,}")
+        print(f"projector params: {proj_total:,}")
+        print(f"total params: {model_total:,}")
+
+    global_sigreg_fn = build_sigreg(
+        cfg.sigreg_num_points,
+        cfg.sigreg_num_slices,
+        device,
+    )
+    local_sigreg_fn = build_sigreg(
+        cfg.local_sigreg_num_points,
+        cfg.local_sigreg_num_slices,
+        device,
+    )
+
+    opt, scheduler = build_optimizer_and_scheduler(cfg, model)
+    amp_dtype, scaler = build_amp(cfg)
+
+    Path(cfg.save_dir).mkdir(parents=True, exist_ok=True)
+
+    wandb_run = setup_wandb(cfg, rank)
+    # print(f"Config: {cfg}")
+    if wandb_run is not None:
+        wandb_run.config.update({
+            "model_name": cfg.model_name,
+            "objective": "global_local_lejepa_no_teacher",
+            "normalization": "valid_pixel_mean_std",
+            "spectra_dataset_path": cfg.spectra_dataset_name,
+            "spectra_num_pixels": cfg.spectra_num_pixels,
+            "spectra_patch_size": cfg.spectra_patch_size,
+            "spectra_num_patches": cfg.spectra_num_patches,
+            "spectra_num_views": cfg.spectra_num_views,
+            "spectra_mask_ratio": cfg.spectra_mask_ratio,
+            "spectra_mask_span": cfg.spectra_mask_span,
+            "spectra_noise_scale": cfg.spectra_noise_scale,
+            "spectra_embed_dim": cfg.spectra_embed_dim,
+            "spectra_depth": cfg.spectra_depth,
+            "spectra_num_heads": cfg.spectra_num_heads,
+            "spectra_pooling": cfg.spectra_pooling,
+            "global_sigreg_weight": cfg.lambd,
+            "local_sigreg_weight": cfg.local_lambd,
+            "local_loss_weight": cfg.local_loss_weight,
+            "local_sigreg_num_positions": cfg.local_sigreg_num_positions,
+            "backbone_num_params": backbone_total,
+            "backbone_num_params_m": backbone_total / 1e6,
+            "projector_num_params": proj_total,
+            "projector_num_params_m": proj_total / 1e6,
+            "model_num_params": model_total,
+            "model_num_params_m": model_total / 1e6,
+            "trainable_num_params": model_trainable,
+            "trainable_num_params_m": model_trainable / 1e6,
+        }, allow_val_change=True)
+    
+    start_epoch = 0
+    resume_step_in_epoch = 0
+    global_step = 0
+
+    if cfg.resume_path is not None:
+        start_epoch, resume_step_in_epoch, global_step = load_checkpoint(
+            cfg.resume_path,
+            model=model,
+            optimizer=opt,
+            scheduler=scheduler,
+            scaler=scaler,
+            device=device,
+        )
+        global_sigreg_fn.global_step.fill_(global_step)
+        local_sigreg_fn.global_step.fill_(global_step)
+        if is_main_process(rank):
+            print(
+                f"Resumed from {cfg.resume_path} at epoch={start_epoch}, "
+                f"step_in_epoch={resume_step_in_epoch}, global_step={global_step}"
+            )
+
+    final_checkpoint_epoch = start_epoch
+    final_checkpoint_step_in_epoch = resume_step_in_epoch
+
+    for epoch in range(start_epoch, cfg.epochs):
+        train_ds.set_epoch(epoch)
+        model.train()
+
+        epoch_step_offset = resume_step_in_epoch if epoch == start_epoch else 0
+        train_iter = iter(train_loader)
+        for _ in range(epoch_step_offset):
+            try:
+                next(train_iter)
+                has_batch = torch.tensor(1, device=device, dtype=torch.int32)
+            except StopIteration:
+                has_batch = torch.tensor(0, device=device, dtype=torch.int32)
+            dist.all_reduce(has_batch, op=dist.ReduceOp.MIN)
+            if has_batch.item() == 0:
+                raise RuntimeError("Cannot restore the saved mid-epoch data position")
+
+        pbar = tqdm(
+            range(epoch_step_offset, cfg.steps_per_epoch),
+            disable=not is_main_process(rank),
+            desc=f"epoch {epoch + 1}/{cfg.epochs}",
+        )
+        step_in_epoch = epoch_step_offset
+
+        for step in pbar:
+            try:
+                batch = next(train_iter)
+                has_batch = torch.tensor(1, device=device, dtype=torch.int32)
+            except StopIteration:
+                batch = None
+                has_batch = torch.tensor(0, device=device, dtype=torch.int32)
+
+            # DDP streaming safety: all ranks must agree that the next batch exists before any forward/loss collective.
+            dist.all_reduce(has_batch, op=dist.ReduceOp.MIN)
+            if has_batch.item() == 0:
+                raise RuntimeError(
+                    "DESI stream exhausted before the configured epoch boundary: "
+                    f"epoch={epoch + 1}/{cfg.epochs}, "
+                    f"step_in_epoch={step}/{cfg.steps_per_epoch}. "
+                    "This indicates data-count or sharding drift; refusing to "
+                    "record a partial stream as a completed epoch."
+                )
+
+            views = batch["views"].to(device, non_blocking=True)
+            valid_pixels = batch["valid_pixels"].to(device, non_blocking=True).bool()
+            valid_target_patches = batch["valid_target_patches"].to(
+                device,
+                non_blocking=True,
+            ).bool()
+            jepa_masks = batch["jepa_masks"].to(device, non_blocking=True).bool()
+            
+            opt.zero_grad(set_to_none=True)
+
+            with autocast("cuda", dtype=amp_dtype):
+                global_emb, global_proj, patch_emb, patch_proj = model(
+                    views,
+                    valid_pixels,
+                    jepa_masks,
+                )
+                losses = compute_lejepa_loss(
+                    global_proj=global_proj,
+                    patch_proj=patch_proj,
+                    valid_target_patches=valid_target_patches,
+                    jepa_masks=jepa_masks,
+                    global_sigreg_fn=global_sigreg_fn,
+                    local_sigreg_fn=local_sigreg_fn,
+                    global_lambd=cfg.lambd,
+                    local_lambd=cfg.local_lambd,
+                    local_loss_weight=cfg.local_loss_weight,
+                    local_sigreg_num_positions=cfg.local_sigreg_num_positions,
+                    global_step=global_step,
+                )
+                loss = losses["loss"]
+            
+            if scaler.is_enabled():
+                scaler.scale(loss).backward()
+                scaler.unscale_(opt)
+                grad_norm = torch.nn.utils.clip_grad_norm_(
+                    model.parameters(),
+                    cfg.grad_clip_norm,
+                )
+                scaler.step(opt)
+                scaler.update()
+            else:
+                loss.backward()
+                grad_norm = torch.nn.utils.clip_grad_norm_(
+                    model.parameters(),
+                    cfg.grad_clip_norm,
+                )
+                opt.step()
+
+            scheduler.step()
+            global_step += 1
+            step_in_epoch = step + 1
+            epoch_progress = epoch + step_in_epoch / cfg.steps_per_epoch
+            samples_seen = global_step * cfg.bs * world_size
+            
+            lr = scheduler.get_last_lr()[0]
+            
+            if global_step % cfg.log_every == 0:
+                with torch.no_grad():
+                    global_emb_stats = feature_std_stats(global_emb.detach())
+                    global_proj_stats = feature_std_stats(global_proj.detach())
+                    patch_emb_stats = token_feature_std_stats(patch_emb.detach())
+                    patch_proj_stats = token_feature_std_stats(patch_proj.detach())
+
+                reduced_losses = {
+                    name: ddp_mean(value.detach(), world_size)
+                    for name, value in losses.items()
+                }
+                global_emb_mean_std = ddp_mean(global_emb_stats[0], world_size)
+                global_emb_min_std = ddp_mean(global_emb_stats[1], world_size)
+                global_proj_mean_std = ddp_mean(global_proj_stats[0], world_size)
+                global_proj_min_std = ddp_mean(global_proj_stats[1], world_size)
+                patch_emb_mean_std = ddp_mean(patch_emb_stats[0], world_size)
+                patch_emb_min_std = ddp_mean(patch_emb_stats[1], world_size)
+                patch_proj_mean_std = ddp_mean(patch_proj_stats[0], world_size)
+                patch_proj_min_std = ddp_mean(patch_proj_stats[1], world_size)
+                grad_norm_mean = ddp_mean(grad_norm.detach(), world_size)
+                valid_fraction_mean = ddp_mean(
+                    batch["valid_pixel_fraction"].to(device).mean(),
+                    world_size,
+                )
+                mask_fraction_mean = ddp_mean(jepa_masks.float().mean(), world_size)
+                normalization_mean = ddp_mean(
+                    batch["normalization_mean"].to(device).mean(),
+                    world_size,
+                )
+                normalization_std = ddp_mean(
+                    batch["normalization_log_std"].to(device).exp().mean(),
+                    world_size,
+                )
+                scale_floor_rate = ddp_mean(
+                    batch["normalization_scale_was_floored"].to(device).float().mean(),
+                    world_size,
+                )
+
+                if is_main_process(rank):
+                    pbar.set_postfix(
+                        loss=f"{reduced_losses['loss'].item():.4f}",
+                        global_loss=f"{reduced_losses['global_loss'].item():.4f}",
+                        local_loss=f"{reduced_losses['local_loss'].item():.4f}",
+                        lr=f"{lr:.2e}",
+                    )
+
+                    if wandb_run is not None:
+                        wandb_run.log(
+                            {
+                                **{
+                                    f"train/{name}": value.item()
+                                    for name, value in reduced_losses.items()
+                                },
+                                "collapse/global_emb_mean_std": global_emb_mean_std.item(),
+                                "collapse/global_emb_min_std": global_emb_min_std.item(),
+                                "collapse/global_proj_mean_std": global_proj_mean_std.item(),
+                                "collapse/global_proj_min_std": global_proj_min_std.item(),
+                                "collapse/patch_emb_mean_std": patch_emb_mean_std.item(),
+                                "collapse/patch_emb_min_std": patch_emb_min_std.item(),
+                                "collapse/patch_proj_mean_std": patch_proj_mean_std.item(),
+                                "collapse/patch_proj_min_std": patch_proj_min_std.item(),
+                                "data/valid_pixel_fraction": valid_fraction_mean.item(),
+                                "data/jepa_mask_fraction": mask_fraction_mean.item(),
+                                "data/normalization_mean": normalization_mean.item(),
+                                "data/normalization_std": normalization_std.item(),
+                                "data/normalization_scale_floor_rate": scale_floor_rate.item(),
+                                "train/grad_norm": grad_norm_mean.item(),
+                                "train/lr": lr,
+                                "train/epoch": epoch_progress,
+                                "train/epoch_index": epoch,
+                                "train/epoch_number": epoch + 1,
+                                "train/step_in_epoch": step_in_epoch,
+                                "train/samples_seen": samples_seen,
+                                "train/step": global_step,
+                            },
+                            step=global_step,
+                        )
+
+            if global_step % cfg.ckpt_every == 0:
+                dist.barrier()
+                if is_main_process(rank):
+                    save_checkpoint(
+                        cfg=cfg,
+                        model=model,
+                        optimizer=opt,
+                        scheduler=scheduler,
+                        scaler=scaler,
+                        epoch=epoch,
+                        step_in_epoch=step_in_epoch,
+                        global_step=global_step,
+                        path=os.path.join(cfg.save_dir, f"step_{global_step}.pt"),
+                    )
+                    removed_checkpoints = prune_periodic_checkpoints(
+                        cfg.save_dir,
+                        cfg.keep_last_periodic_checkpoints,
+                    )
+                    for removed_path in removed_checkpoints:
+                        print(f"Removed old rolling checkpoint: {removed_path}")
+                dist.barrier()
+
+            if global_step >= cfg.total_steps:
+                break
+
+        epoch_completed = step_in_epoch >= cfg.steps_per_epoch
+        final_checkpoint_epoch = epoch + 1 if epoch_completed else epoch
+        final_checkpoint_step_in_epoch = 0 if epoch_completed else step_in_epoch
+        dist.barrier()
+
+        if is_main_process(rank):
+            save_checkpoint(
+                cfg=cfg,
+                model=model,
+                optimizer=opt,
+                scheduler=scheduler,
+                scaler=scaler,
+                epoch=final_checkpoint_epoch,
+                step_in_epoch=final_checkpoint_step_in_epoch,
+                global_step=global_step,
+                path=os.path.join(cfg.save_dir, f"last_epoch_{final_checkpoint_epoch}.pt"),
+            )
+        dist.barrier()
+        if global_step >= cfg.total_steps:
+            break
+    
+    if is_main_process(rank):
+        save_checkpoint(
+            cfg=cfg,
+            model=model,
+            optimizer=opt,
+            scheduler=scheduler,
+            scaler=scaler,
+            epoch=final_checkpoint_epoch,
+            step_in_epoch=final_checkpoint_step_in_epoch,
+            global_step=global_step,
+            path=os.path.join(cfg.save_dir, f"complete.pt"),
+        )
+    dist.barrier()
+    
+    if wandb_run is not None:
+        wandb_run.finish()
+
+    dist.destroy_process_group()
+
+if __name__ == "__main__":
+    main()

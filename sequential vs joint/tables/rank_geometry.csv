@@ -1,0 +1,9 @@
+regime,modality,representation,feature_dim,effective_rank,participation_ratio,largest_eigenvalue_share
+Sequential,Image,projected,256,8.833515,7.277975,0.229309
+Sequential,Image,raw,1024,37.039421,15.709231,0.182616
+Sequential,Spectrum,projected,256,8.601736,7.302747,0.224430
+Sequential,Spectrum,raw,768,13.672790,9.587706,0.207751
+Joint,Image,projected,256,20.193825,17.143002,0.099305
+Joint,Image,raw,1024,28.262329,12.766996,0.192207
+Joint,Spectrum,projected,256,17.943621,14.682765,0.111189
+Joint,Spectrum,raw,768,26.075251,10.081794,0.225241

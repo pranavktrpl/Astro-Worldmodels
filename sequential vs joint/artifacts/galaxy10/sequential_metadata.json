@@ -1,0 +1,63 @@
+{
+  "checkpoint": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/CrossModalPostTrain_DESI307K_AstroCLIPPool_LeJEPA_SIGReg/last.pt",
+  "source_checkpoints_recorded": {
+    "image": {
+      "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_52000.pt",
+      "size_bytes": 3730121983,
+      "mtime_ns": 1777313812616788521,
+      "global_step": 52000,
+      "epoch": 4,
+      "ignored_pretraining_heads": [
+        "proj"
+      ],
+      "model_name": "vit_large_patch14_dinov2.lvd142m"
+    },
+    "spectrum": {
+      "path": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/SpectraV2_DESI_GlobalLocalLeJEPA_MeanStd_CorrectedEpochs/complete.pt",
+      "size_bytes": 1076363245,
+      "mtime_ns": 1787692477972755260,
+      "global_step": 172390,
+      "epoch": 10,
+      "ignored_pretraining_heads": [
+        "global_proj",
+        "local_proj"
+      ],
+      "config": {
+        "spectra_patch_size": 20,
+        "spectra_num_patches": 389,
+        "spectra_embed_dim": 768,
+        "spectra_pooling": "cls"
+      }
+    }
+  },
+  "source_checkpoints_loaded": {
+    "image": {
+      "path": "/mnt/datasets/utbd_pranav/Astro-Worldmodels-checkpoint-archive/VitLargePatch14_OfficialTrain5_Epoch5_2504/step_52000.pt",
+      "size_bytes": 3730121983,
+      "mtime_ns": 1777313812616788521,
+      "global_step": 52000,
+      "epoch": 4,
+      "ignored_pretraining_heads": [
+        "proj"
+      ],
+      "model_name": "vit_large_patch14_dinov2.lvd142m"
+    },
+    "spectrum": {
+      "path": "/mnt/datasets/utbd_pranav/Astro-Worldmodels-checkpoint-archive/SpectraV2_DESI_GlobalLocalLeJEPA_MeanStd_CorrectedEpochs/complete.pt",
+      "size_bytes": 1076363245,
+      "mtime_ns": 1787692477972755260,
+      "global_step": 172390,
+      "epoch": 10,
+      "ignored_pretraining_heads": [
+        "global_proj",
+        "local_proj"
+      ],
+      "config": {
+        "spectra_patch_size": 20,
+        "spectra_num_patches": 389,
+        "spectra_embed_dim": 768,
+        "spectra_pooling": "cls"
+      }
+    }
+  }
+}

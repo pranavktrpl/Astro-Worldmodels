@@ -1,0 +1,130 @@
+[
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_004000",
+    "probe_seed": 42,
+    "selected_l2": 100.0,
+    "step": 4000,
+    "test_r2": 0.5176118231581535
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_008000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 8000,
+    "test_r2": 0.5278610457567341
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_012000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 12000,
+    "test_r2": 0.5255089142089677
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_016000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 16000,
+    "test_r2": 0.5272334610068504
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_020000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 20000,
+    "test_r2": 0.5293789549540354
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_024000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 24000,
+    "test_r2": 0.5303227716691312
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_028000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 28000,
+    "test_r2": 0.5303332207643803
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_032000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 32000,
+    "test_r2": 0.5301843122991219
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_036000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 36000,
+    "test_r2": 0.5311724688258315
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_040000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 40000,
+    "test_r2": 0.531666394040561
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_044000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 44000,
+    "test_r2": 0.5313709384596748
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_048000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 48000,
+    "test_r2": 0.5308920036260472
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_step_052000",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 52000,
+    "test_r2": 0.5302813869640539
+  },
+  {
+    "kind": "ours",
+    "label": "astrojepa_complete_054940",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 54940,
+    "test_r2": 0.5302291276354856
+  },
+  {
+    "kind": "ours_cpt",
+    "label": "astrojepa_cpt_epoch_01",
+    "probe_seed": 42,
+    "selected_l2": 1.0,
+    "step": 62988,
+    "test_r2": 0.5312752114403934
+  },
+  {
+    "kind": "astrodino",
+    "label": "astroclip_astrodino_pre_alignment",
+    "probe_seed": 42,
+    "selected_l2": 100.0,
+    "step": 250000,
+    "test_r2": 0.528876841286291
+  }
+]

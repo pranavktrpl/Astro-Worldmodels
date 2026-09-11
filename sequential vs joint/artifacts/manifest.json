@@ -1,0 +1,17 @@
+{
+  "study": "sequential versus joint cross-modal JEPA",
+  "labels_sha256": "82c8bfad90db1e6155cd4c7bd3488eeff95faa82d7a0e5605bca164ed4c36e61",
+  "population": {
+    "rows": 168280,
+    "train": 138583,
+    "test": 29697,
+    "property_test": 15993
+  },
+  "states": {
+    "U": "independent SSL raw backbone",
+    "S": "sequential learned-query pooler",
+    "J_raw": "joint backbone output",
+    "J": "joint projected output"
+  },
+  "warning": "Sequential freezes its pretrained backbones and trains about 2.23M pooler parameters for 10 epochs; joint trains about 392M parameters end-to-end for 50 epochs. This is not an initialization-only controlled comparison."
+}

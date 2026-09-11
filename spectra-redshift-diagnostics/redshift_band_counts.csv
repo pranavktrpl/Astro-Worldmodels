@@ -1,0 +1,41 @@
+dataset,redshift_band,count,percent
+ssl_pretraining_train,negative,203226,18.410253
+ssl_pretraining_train,0.0 <= z < 0.1,138054,12.506319
+ssl_pretraining_train,0.1 <= z < 0.3,179741,16.282746
+ssl_pretraining_train,0.3 <= z < 0.5,90750,8.221047
+ssl_pretraining_train,0.5 <= z < 1.0,245545,22.243934
+ssl_pretraining_train,1.0 <= z < 2.0,231567,20.977666
+ssl_pretraining_train,2.0 <= z < 3.0,12782,1.157922
+ssl_pretraining_train,z >= 3.0,2209,0.200113
+crossmodal_all_pairs,negative,938,0.305112
+crossmodal_all_pairs,0.0 <= z < 0.1,34521,11.228971
+crossmodal_all_pairs,0.1 <= z < 0.3,174142,56.644808
+crossmodal_all_pairs,0.3 <= z < 0.5,85061,27.668592
+crossmodal_all_pairs,0.5 <= z < 1.0,11875,3.862693
+crossmodal_all_pairs,1.0 <= z < 2.0,851,0.276813
+crossmodal_all_pairs,2.0 <= z < 3.0,18,0.005855
+crossmodal_all_pairs,z >= 3.0,22,0.007156
+crossmodal_astroclip,negative,873,0.440963
+crossmodal_astroclip,0.0 <= z < 0.1,21433,10.826060
+crossmodal_astroclip,0.1 <= z < 0.3,106820,53.956035
+crossmodal_astroclip,0.3 <= z < 0.5,58151,29.372752
+crossmodal_astroclip,0.5 <= z < 1.0,9887,4.994040
+crossmodal_astroclip,1.0 <= z < 2.0,772,0.389946
+crossmodal_astroclip,2.0 <= z < 3.0,18,0.009092
+crossmodal_astroclip,z >= 3.0,22,0.011112
+crossmodal_mmu,negative,0,0.000000
+crossmodal_mmu,0.0 <= z < 0.1,9832,10.252881
+crossmodal_mmu,0.1 <= z < 0.3,58480,60.983367
+crossmodal_mmu,0.3 <= z < 0.5,25663,26.761562
+crossmodal_mmu,0.5 <= z < 1.0,1918,2.000104
+crossmodal_mmu,1.0 <= z < 2.0,2,0.002086
+crossmodal_mmu,2.0 <= z < 3.0,0,0.000000
+crossmodal_mmu,z >= 3.0,0,0.000000
+crossmodal_manual,negative,65,0.479457
+crossmodal_manual,0.0 <= z < 0.1,3256,24.017113
+crossmodal_manual,0.1 <= z < 0.3,8842,65.220919
+crossmodal_manual,0.3 <= z < 0.5,1247,9.198200
+crossmodal_manual,0.5 <= z < 1.0,70,0.516338
+crossmodal_manual,1.0 <= z < 2.0,77,0.567972
+crossmodal_manual,2.0 <= z < 3.0,0,0.000000
+crossmodal_manual,z >= 3.0,0,0.000000

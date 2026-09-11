@@ -1,5 +1,10 @@
 # Spectra Backbone Training README
 
+> Historical v1 document. The preserved implementation is under
+> `baseline_train_runs_2026-08-10/`. The live DESI v2 entry point is
+> `train-spectra-v2.py`; its design and implementation reference are maintained
+> in `docs/SPECTRA_V2_DECISION_LOG.md`.
+
 This document describes the DESI spectra LeJEPA training path built around
 `train-spectra.py`. It is the spectra analogue of the galaxy image training
 pipeline, but the data representation, crop mechanism, and encoder are
@@ -739,4 +744,3 @@ These are not currently part of the main script unless explicitly added.
 5. **Epoch exactness.** Because HF streaming shards can be uneven, one epoch is
    best understood as "up to the planned number of synchronized DDP steps",
    not a mathematically exact full pass.
-

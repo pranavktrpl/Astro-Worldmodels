@@ -1,0 +1,62 @@
+{
+  "model": "sequential",
+  "representation": "projected",
+  "scopes": {
+    "all_168280": {
+      "image_to_spectrum": {
+        "matched_cosine_mean": 0.7295029759407043,
+        "matched_cosine_std": 0.2673109769821167,
+        "matched_minus_random": 0.7273223996162415,
+        "mean_rank": 14999.520376753031,
+        "median_rank": 8163.0,
+        "mrr": 0.0013853002282858862,
+        "num_queries": 168280,
+        "random_cosine_mean": 0.002180575393140316,
+        "recall_at_1": 0.00022581411932493463,
+        "recall_at_10": 0.0019788447825053483,
+        "recall_at_5": 0.0009745661991918231
+      },
+      "spectrum_to_image": {
+        "matched_cosine_mean": 0.7295029759407043,
+        "matched_cosine_std": 0.2673109769821167,
+        "matched_minus_random": 0.7270419597625732,
+        "mean_rank": 14798.741751842168,
+        "median_rank": 7993.0,
+        "mrr": 0.0013812509837291924,
+        "num_queries": 168280,
+        "random_cosine_mean": 0.002461020601913333,
+        "recall_at_1": 0.00018421678155455194,
+        "recall_at_10": 0.0019966722129783694,
+        "recall_at_5": 0.0010280484906108867
+      }
+    },
+    "test_29697": {
+      "image_to_spectrum": {
+        "matched_cosine_mean": 0.7311580181121826,
+        "matched_cosine_std": 0.26391613483428955,
+        "matched_minus_random": 0.7298039793968201,
+        "mean_rank": 2617.392598578981,
+        "median_rank": 1432.0,
+        "mrr": 0.005354906258340116,
+        "num_queries": 29697,
+        "random_cosine_mean": 0.0013540377840399742,
+        "recall_at_1": 0.0007408155705963565,
+        "recall_at_10": 0.008485705626830993,
+        "recall_at_5": 0.004040812203252854
+      },
+      "spectrum_to_image": {
+        "matched_cosine_mean": 0.7311580181121826,
+        "matched_cosine_std": 0.26391613483428955,
+        "matched_minus_random": 0.7278059720993042,
+        "mean_rank": 2572.673401353672,
+        "median_rank": 1404.0,
+        "mrr": 0.005636248279298942,
+        "num_queries": 29697,
+        "random_cosine_mean": 0.0033520329743623734,
+        "recall_at_1": 0.0009091827457318921,
+        "recall_at_10": 0.008923460282183385,
+        "recall_at_5": 0.0050510152540660675
+      }
+    }
+  }
+}

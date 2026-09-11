@@ -1,0 +1,685 @@
+Yes. I think **this is the more interesting scientific question**.
+
+You now have three representation states:
+
+$$
+\underbrace{I_0,S_0}_{\text{independent unimodal SSL}}
+\rightarrow
+\underbrace{I_{\text{seq}},S_{\text{seq}}}_{\text{SSL then cross-modal JEPA}}
+$$
+
+and separately
+
+$$
+\underbrace{I_{\text{joint}},S_{\text{joint}}}_{\text{joint cross-modal JEPA from scratch}}.
+$$
+
+Instead of asking only whether alignment gets better, ask:
+
+> **What information is retained, discarded, transferred, or newly organized when independently learned unimodal representations are turned into cross-modal representations?**
+
+That can absolutely become the heart of the paper.
+
+## Think of cross-modal training as an information transformation
+
+Very roughly, each modality begins with
+
+$$
+Z_I = [Z_{\text{shared}},Z_{\text{image-private}}]
+$$
+
+$$
+Z_S = [Z_{\text{shared}},Z_{\text{spectra-private}}].
+$$
+
+Cross-modal training has an incentive to emphasize whatever is **predictable across the modalities**.
+
+So after alignment, perhaps:
+
+$$
+Z'_I =
+[\uparrow Z_{\text{shared}},
+\downarrow Z_{\text{image-private}}]
+$$
+
+and similarly for spectra.
+
+The key empirical question becomes:
+
+> **Does cross-modal JEPA discover shared physical factors while sacrificing modality-specific information?**
+
+And then:
+
+> **Does sequential pretraining preserve private information better than joint-from-scratch training?**
+
+That's a much stronger story.
+
+---
+
+# I would build an "information accounting" experiment
+
+For every representation:
+
+$$
+I_0,S_0,I_{\text{seq}},S_{\text{seq}},I_{\text{joint}},S_{\text{joint}}
+$$
+
+measure four things:
+
+1. **shared information**
+2. **modality-private information**
+3. **downstream physical information**
+4. **representation geometry**
+
+Then literally ask where the information goes.
+
+---
+
+# 1. First: build a property battery
+
+This is probably the most important experiment.
+
+Divide your available physical labels into three conceptual categories.
+
+### Image-dominant information
+
+Things that should be particularly accessible visually:
+
+* morphology
+* axis ratio / ellipticity
+* concentration
+* galaxy size
+* Sérsic-type structural quantities
+* inclination
+* spiral/bar features, if available
+
+### Spectrum-dominant information
+
+For example:
+
+* emission-line properties
+* metallicity
+* spectral age indicators
+* velocity dispersion
+* detailed star-formation indicators
+
+depending on the labels you actually have.
+
+### Shared physical information
+
+Things both modalities plausibly carry:
+
+* redshift
+* stellar mass
+* star formation rate
+* broad galaxy type
+* colour-related properties
+* perhaps age
+
+Then probe **all six representations** using exactly the same simple linear probe.
+
+Your fundamental table becomes:
+
+| Representation      | Image-private | Spectrum-private | Shared |
+| ------------------- | ------------: | ---------------: | -----: |
+| Image SSL           |          high |                — |   high |
+| Spectrum SSL        |             — |             high |   high |
+| Sequential image    |             ? |                — |      ? |
+| Sequential spectrum |             — |                ? |      ? |
+| Joint image         |             ? |                — |      ? |
+| Joint spectrum      |             — |                ? |      ? |
+
+But don't report only absolute scores.
+
+Report:
+
+$$
+\Delta_{\text{align}}(y)
+=
+P(y\mid Z_{\text{aligned}})
+-
+P(y\mid Z_{\text{SSL}})
+$$
+
+for every property \(y\).
+
+That gives you an **information gain/loss spectrum**.
+
+Imagine the result is:
+
+```text
+                 Δ after cross-modal alignment
+
+Redshift                  +++
+Stellar mass               ++
+SFR                         ++
+Galaxy morphology            0
+Axis ratio                  --
+Fine morphology            ---
+```
+
+That's immediately interpretable:
+
+> Cross-modal prediction enriches features supported by both modalities while suppressing features specific to one observation channel.
+
+That would be a strong result.
+
+---
+
+# 2. But we can do better: explicitly separate shared and private subspaces
+
+This is the experiment I most want you to run.
+
+Take paired representations:
+
+$$
+Z_I \in \mathbb{R}^{N\times d_I},
+\qquad
+Z_S \in \mathbb{R}^{N\times d_S}.
+$$
+
+Run **CCA** (or regularized CCA).
+
+CCA finds directions
+
+$$
+u_k^\top Z_I,\qquad v_k^\top Z_S
+$$
+
+that are maximally correlated across the two modalities.
+
+You can interpret the high-correlation canonical directions as an approximation to:
+
+$$
+Z_{\text{shared}}.
+$$
+
+Everything orthogonal/not predictable becomes approximately:
+
+$$
+Z_{\text{private}}.
+$$
+
+Do this separately for:
+
+### Before alignment
+
+$$
+(I_0,S_0)
+$$
+
+### Sequential JEPA
+
+$$
+(I_{\text{seq}},S_{\text{seq}})
+$$
+
+### Joint JEPA
+
+$$
+(I_{\text{joint}},S_{\text{joint}}).
+$$
+
+Now plot the **canonical correlation spectrum**:
+
+$$
+\rho_1,\rho_2,\ldots,\rho_d.
+$$
+
+This could be one of your main figures.
+
+Suppose you observe:
+
+```text
+Unimodal SSL       ██████░░░░░░░░
+Sequential JEPA    ██████████░░░░
+Joint JEPA         █████████████░
+```
+
+Joint training has pushed far more dimensions into the shared subspace.
+
+But that alone isn't necessarily good.
+
+Now ask:
+
+> **What did those additional shared dimensions replace?**
+
+That's where the next experiment comes in.
+
+---
+
+# 3. Probe the shared and private components separately
+
+This becomes extremely compelling.
+
+After CCA, construct approximately:
+
+$$
+Z_I^{\text{shared}}
+$$
+
+and
+
+$$
+Z_I^{\text{private}}
+=
+Z_I-Z_I^{\text{shared}}.
+$$
+
+Same for spectra.
+
+Then train probes.
+
+Imagine:
+
+| Representation component | Redshift |     Mass | Morphology | Inclination |
+| ------------------------ | -------: | -------: | ---------: | ----------: |
+| Image shared             | **high** | **high** |     medium |         low |
+| Image private            |      low |   medium |   **high** |    **high** |
+
+Now do this before and after multimodal training.
+
+You could discover:
+
+### Before alignment
+
+$$
+Z_I =
+40\%\text{ shared}
++
+60\%\text{ private}
+$$
+
+### Sequential
+
+$$
+Z_I =
+65\%\text{ shared}
++
+35\%\text{ private}
+$$
+
+### Joint
+
+$$
+Z_I =
+85\%\text{ shared}
++
+15\%\text{ private}.
+$$
+
+Obviously don't literally call these percentages unless you define the metric carefully, but conceptually that's what you're testing.
+
+Then your result becomes:
+
+> **Joint cross-modal learning creates stronger common representations, but does so by suppressing modality-specific information. Sequential alignment achieves a different compromise, increasing shared structure while preserving substantially more unimodal information.**
+
+Now we have a paper.
+
+---
+
+# 4. Cross-modal predictability is another measure of "shared"
+
+There's an even simpler version than CCA.
+
+Train:
+
+$$
+f_{S\rightarrow I}(Z_S)\approx Z_I
+$$
+
+using ridge regression.
+
+Then define
+
+$$
+Z_I^{\text{shared}}
+=
+f_{S\rightarrow I}(Z_S)
+$$
+
+and residual:
+
+$$
+Z_I^{\text{private}}
+=
+Z_I-\hat Z_I.
+$$
+
+Similarly:
+
+$$
+Z_S^{\text{shared}}
+=f_{I\rightarrow S}(Z_I)
+$$
+
+$$
+Z_S^{\text{private}}
+=
+Z_S-\hat Z_S.
+$$
+
+This interpretation is beautifully compatible with JEPA because it defines shared information operationally as:
+
+> **whatever is predictable from the other modality.**
+
+Then calculate:
+
+$$
+R^2_{S\rightarrow I}
+$$
+
+and
+
+$$
+R^2_{I\rightarrow S}.
+$$
+
+You can watch cross-predictable information grow:
+
+$$
+SSL
+\rightarrow
+Sequential
+\rightarrow
+Joint.
+$$
+
+And probe the residual.
+
+If the residual contains morphology while predicted components contain redshift/mass, that's a gorgeous demonstration of what cross-modal JEPA is actually doing.
+
+---
+
+# 5. Measure forgetting directly
+
+Now compare
+
+$$
+I_0 \rightarrow I_{\text{seq}}.
+$$
+
+There are two notions of forgetting.
+
+### Functional forgetting
+
+Does a piece of information become less decodable?
+
+$$
+\Delta_y=
+\operatorname{Probe}(I_{\text{seq}},y)
+-
+\operatorname{Probe}(I_0,y).
+$$
+
+Negative means information became harder to access.
+
+### Geometric forgetting
+
+How much did representation geometry change?
+
+Use:
+
+$$
+CKA(I_0,I_{\text{seq}})
+$$
+
+and
+
+$$
+CKA(S_0,S_{\text{seq}}).
+$$
+
+CKA is well suited to comparing separately trained neural representations and is widely used for this purpose. ([Proceedings of Machine Learning Research][1])
+
+Then also calculate:
+
+### kNN preservation
+
+For each galaxy:
+
+$$
+N_k^{\text{before}}(x)
+$$
+
+versus
+
+$$
+N_k^{\text{after}}(x).
+$$
+
+Measure:
+
+$$
+\frac{|N_k^\text{before}(x)
+\cap
+N_k^\text{after}(x)|}{k}.
+$$
+
+This tells you whether the **local meaning of similarity** changes during multimodal training.
+
+---
+
+# 6. The really interesting question: WHICH galaxies move?
+
+Don't just average CKA.
+
+For each object calculate representation displacement after aligning spaces with Procrustes:
+
+$$
+d_i=
+\|
+Rz_i^{SSL}-z_i^{aligned}
+\|.
+$$
+
+Then correlate \(d_i\) with physical characteristics.
+
+Maybe:
+
+* unusual spectra move more,
+* peculiar morphologies move more,
+* high-SFR galaxies move more,
+* edge-on galaxies move more.
+
+That tells you **where the two modalities disagree**.
+
+This is potentially very cool scientifically.
+
+For example:
+
+> Galaxies whose image-derived and spectral-derived physical evidence disagree undergo the largest representation updates during cross-modal alignment.
+
+Then cross-modal learning is doing more than compression. It's revealing **cross-modal disagreement**.
+
+---
+
+# 7. Cross-modal training may CREATE information accessibility
+
+There's an important subtlety.
+
+Cross-modal alignment cannot magically add information to the pixels that isn't there.
+
+But it **can reorganize information that was previously entangled** so a simple downstream model can access it.
+
+Suppose stellar mass probe:
+
+$$
+I_0: 0.61
+$$
+
+$$
+I_{\text{seq}}:0.78.
+$$
+
+That doesn't necessarily mean the image suddenly contains more information about stellar mass.
+
+It may mean the spectrum has acted as a **learning signal that linearizes that factor** in image representation space.
+
+This gives you another distinction:
+
+### Information content
+
+Does the representation contain \(y\)?
+
+versus
+
+### Information accessibility
+
+Can a simple decoder extract \(y\)?
+
+You can test this with a hierarchy:
+
+* linear probe
+* 1-layer MLP
+* 2-layer MLP
+
+If cross-modal training mostly improves the linear probe while a powerful MLP was already able to extract the property from SSL features, then cross-modal learning has **reorganized** rather than truly introduced task-relevant information.
+
+That is a really nice result.
+
+---
+
+# 8. This lets us ask something even cleaner about Sequential vs Joint
+
+Now compare the two methods on a **Pareto frontier**.
+
+x-axis:
+
+$$
+\text{cross-modal shared information}
+$$
+
+for example average canonical correlation / cross-modal \(R^2\).
+
+y-axis:
+
+$$
+\text{retained unimodal information}.
+$$
+
+You might obtain:
+
+```text
+          ↑ retain private information
+
+       SSL ●
+           |
+           |
+Sequential ●──────────
+                       \
+                        ● Joint
+                            → cross-modal shared information
+```
+
+That's potentially the **single best figure in the paper**.
+
+The question isn't:
+
+> Which model wins?
+
+It's:
+
+> **What is the trade-off between preserving modality-specific structure and acquiring modality-invariant structure?**
+
+Perhaps:
+
+* Joint JEPA maximizes cross-modal agreement.
+* Sequential JEPA gives a better shared/private tradeoff.
+* Independent SSL maximizes private structure but lacks explicit correspondence.
+
+That's substantially more interesting.
+
+---
+
+# 9. And then CLIP fits naturally
+
+Now CLIP becomes another point on that frontier rather than the entire paper.
+
+You can have:
+
+$$
+\{\text{Unimodal SSL},
+\text{Sequential JEPA},
+\text{Joint JEPA},
+\text{CLIP}\}.
+$$
+
+And characterize every model by:
+
+### A. Pair alignment
+
+Retrieval.
+
+### B. Structural alignment
+
+CKA / CCA / neighborhoods.
+
+### C. Cross-predictability
+
+\(I\rightarrow S\), \(S\rightarrow I\).
+
+### D. Shared physical information
+
+Shared-subspace probes.
+
+### E. Private information retention
+
+Residual probes.
+
+Now you could get something beautiful like:
+
+| Model           | Pair align | Shared structure | Private info |
+| --------------- | ---------: | ---------------: | -----------: |
+| SSL             |        low |           medium |     **high** |
+| Sequential JEPA |       high |         **high** |         high |
+| Joint JEPA      |   **high** |         **high** |          low |
+| CLIP            |   **high** |           medium |          low |
+
+That's a vastly more meaningful characterization than ranking them by retrieval accuracy.
+
+---
+
+# I would formulate the actual scientific question as
+
+> ### What is the cost of multimodal agreement?
+
+More formally:
+
+> **When representations are optimized to encode information predictable across modalities, which properties of the original unimodal representations are preserved, emphasized, reorganized, or discarded?**
+
+Then your second question:
+
+> **Does learning strong unimodal representations before cross-modal alignment change this shared–private information trade-off compared with joint multimodal learning from scratch?**
+
+And *then* JEPA vs CLIP can be question three:
+
+> **Does predictive alignment induce a different shared–private information trade-off from contrastive alignment?**
+
+That's a very coherent hierarchy:
+
+$$
+\boxed{
+\text{Unimodal}
+\xrightarrow{\text{multimodal objective}}
+\text{Shared}+\text{Private}
+}
+$$
+
+and you're studying how the decomposition changes as a function of:
+
+$$
+\boxed{
+\text{training strategy}
+\times
+\text{alignment objective}.
+}
+$$
+
+One thing we should be aware of: a June 2026 paper called **“When to Align, When to Predict: A Phase Diagram for Multimodal Learning”** already studies when cross-modal alignment versus prediction succeeds, including experiments on astrophysical data. ([arXiv][2]) That actually makes me **more** convinced your differentiation should be the *information transformation / shared-vs-private / sequential-vs-joint* question rather than simply “predictive JEPA versus contrastive CLIP.” Also, prior work has shown that independently trained unimodal encoders can already have surprisingly similar geometry before explicit alignment, so your **before → after** analysis has a solid conceptual precedent. ([CVF Open Access][3])
+
+If we keep going gradually, the next thing I'd do is reduce all of this to **5–6 exact experiments/figures that you can realistically run for PriGM**, because there are now enough ideas here to accidentally turn this into a full NeurIPS paper rather than a four-page workshop submission.
+
+[1]: https://proceedings.mlr.press/v97/kornblith19a?utm_source=chatgpt.com "Similarity of Neural Network Representations Revisited"
+[2]: https://arxiv.org/abs/2606.11190?utm_source=chatgpt.com "When to Align, When to Predict: A Phase Diagram for Multimodal Learning"
+[3]: https://openaccess.thecvf.com/content/CVPR2024/html/Maniparambil_Do_Vision_and_Language_Encoders_Represent_the_World_Similarly_CVPR_2024_paper.html?utm_source=chatgpt.com "CVPR 2024 Open Access Repository"

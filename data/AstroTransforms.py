@@ -221,7 +221,17 @@ class AstroMultiCropTransform():
         ])
 
     def _prep(self, image):
-        return image.convert("RGB")
+        if hasattr(image, "convert"):
+            return image.convert("RGB")
+
+        image = torch.as_tensor(np.asarray(image) if not torch.is_tensor(image) else image)
+        if image.ndim != 3:
+            raise ValueError(f"Expected a 3D image, got shape {tuple(image.shape)}")
+        if image.shape[0] != 3 and image.shape[-1] == 3:
+            image = image.permute(2, 0, 1)
+        if image.shape[0] != 3:
+            raise ValueError(f"Expected three image channels, got shape {tuple(image.shape)}")
+        return image.contiguous()
 
     def _make_global1(self, image):
         x = self.global_geom(image)

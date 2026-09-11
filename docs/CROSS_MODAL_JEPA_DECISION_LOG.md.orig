@@ -1,0 +1,698 @@
+# Cross-Modal JEPA Decision Log
+
+Last updated: 2026-08-24
+
+## Purpose
+
+This is the living design record for image-spectrum representation learning in
+Astro-Worldmodels. It records the scientific question, architecture options,
+loss definitions, data requirements, risks, evaluation plan, and decisions made
+before implementation.
+
+A draft cross-modal model, objective, loader, and trainer have been implemented,
+but the data source is being revised before any training run. The immediate goal
+remains a controlled experiment in which the image and spectrum encoders are
+trained jointly from random initialization rather than aligned after pretraining.
+
+## Scientific Question
+
+The central question is:
+
+> Can cross-modal agreement plus separate SIGReg regularization train useful
+> image and spectrum backbones from random initialization, matching or beating
+> backbones that first require unimodal pretraining and are aligned afterward?
+
+This differs from the AstroCLIP recipe. AstroCLIP first pretrained image and
+spectrum encoders separately, then aligned them with a contrastive objective.
+That is an important baseline, but it cannot tell us whether cross-modal signal
+would have changed the features learned during early backbone training.
+
+The proposed from-scratch experiment initializes every backbone and projection
+head randomly. The selected first experiment optimizes only a global
+cross-modal objective. Image-only, spectrum-only, and local objectives remain
+important ablations, but are deliberately excluded from this run.
+
+### Primary hypothesis and claim boundary
+
+The primary hypothesis is that cross-modal invariance supplies the learning
+signal while SIGReg removes the collapse failure that would otherwise make
+teacher-free training from random initialization degenerate. If successful,
+the pair can learn the astrophysical factors shared by images and spectra
+without first constructing two independently pretrained representation spaces.
+
+SIGReg by itself is not claimed to create semantic content. It constrains the
+population geometry; paired cross-modal prediction determines which information
+is useful. The defensible claim is therefore not that SIGReg universally
+eliminates pretraining, but that it may eliminate the collapse-driven need for
+pretraining in this paired image-spectrum setting.
+
+The strong result requires all three of the following:
+
+1. Scratch training without SIGReg collapses or performs materially worse.
+2. Scratch training with SIGReg remains geometrically healthy and learns useful
+   cross-modal retrieval and downstream representations.
+3. Scratch plus SIGReg matches or beats post-trained alignment on the same paired
+   data and test split, while using no unimodal checkpoint initialization.
+
+Matching only training loss or embedding variance is insufficient. Retrieval,
+shared-property probes, unimodal backbone probes, and held-out geometry must all
+be reported.
+
+## Relevant Prior Work
+
+- [AstroCLIP](https://arxiv.org/abs/2310.03024) demonstrates the value of a
+  shared image-spectrum embedding, using separate self-supervised pretraining
+  followed by contrastive alignment.
+- [I-JEPA](https://arxiv.org/abs/2301.08243) motivates prediction in latent space
+  instead of reconstructing pixels.
+- [LeJEPA](https://github.com/galilai-group/lejepa) provides the teacher-free
+  invariance plus SIGReg formulation already used by this project.
+- [MJEPA](https://arxiv.org/abs/2606.25225) jointly trains audio-visual
+  representations and reports that explicit cross-modal prediction is critical;
+  a naive shared multimodal encoder degraded unimodal performance.
+
+These papers support the direction, but none validates this exact astronomical
+objective. The proposed model remains an experiment that must be tested against
+strong unimodal and post-training-alignment controls.
+
+## Definitions
+
+### Post-trained alignment
+
+1. Train an image encoder independently.
+2. Train a spectrum encoder independently.
+3. Load both checkpoints.
+4. Align or fine-tune their representations using paired objects.
+
+This remains a necessary baseline and is close to the AstroCLIP structure.
+
+### Joint training from scratch
+
+1. Initialize both encoders randomly.
+2. Present only scientifically matched image-spectrum pairs and their views.
+3. Optimize the selected cross-modal invariance and separate SIGReg terms.
+4. Allow cross-modal gradients to shape both backbones.
+
+A gradual increase in cross-modal loss weight is still from-scratch joint
+training. It is an optimization curriculum, not post-trained alignment, because
+neither encoder begins from a pretrained checkpoint and both belong to the same
+run.
+
+## Information Shared And Not Shared
+
+Images and spectra observe the same astrophysical object but are not redundant.
+
+Likely shared factors include:
+
+- redshift;
+- broad stellar-population properties;
+- dust and continuum color;
+- star-formation and emission activity;
+- broad galaxy type and mass-related structure.
+
+Important image-private factors include:
+
+- orientation and projected morphology;
+- bars, spiral arms, mergers, and neighbors;
+- spatially resolved color structure;
+- foreground and background image context.
+
+Important spectrum-private factors include:
+
+- detailed line ratios and equivalent widths;
+- narrow line profiles and velocity information;
+- wavelength-local calibration and uncertainty structure;
+- features too subtle to infer from broadband imaging.
+
+The cross-modal objective should therefore operate on a dedicated shared
+representation. It should not force every backbone dimension or every local
+token to match across modalities.
+
+## Recommended First Architecture
+
+Use two modality-specific encoders with their existing architectural families:
+
+```text
+image views -> image encoder -> image CLS and image patch tokens
+                                  |
+                                  +-> image cross-modal head -> z_image
+
+spectrum views -> spectrum encoder -> spectrum CLS and wavelength tokens
+                                        |
+                                        +-> spectrum cross-modal head -> z_spectrum
+```
+
+Both encoders start from random weights and are optimized together. Their
+backbone weights are not shared.
+
+Each encoder has one modality-specific cross-modal head mapping its CLS output
+into the shared space. There are no local heads in the selected first run.
+
+The initial candidate shared dimension is 256. This is deliberately larger than
+the current 64-dimensional unimodal training projector because the cross-modal
+embedding is a deployed representation for retrieval and joint downstream use,
+not merely a disposable anti-collapse head. The dimension remains an open
+ablation against 64, 128, and 512.
+
+The full 768-dimensional backbone output remains available for unimodal tasks.
+The shared cross-modal output is used for image-spectrum retrieval and shared
+physical-property probes.
+
+### Why not share the transformer immediately?
+
+A more radical model could use modality-specific input stems and positional
+embeddings followed by one shared transformer trunk. This is closer to MJEPA.
+It is scientifically interesting, especially because the current spectrum model
+already uses a ViT-like 12-layer transformer.
+
+It should not be the first experiment. A shared trunk changes both the training
+regime and the architecture, making it difficult to determine whether gains or
+failures came from joint training or parameter sharing. It also increases the
+risk of modality interference. It should be a separately named follow-up after
+the two-encoder joint baseline is healthy.
+
+## Input Views
+
+For paired object `b`, construct two image views and two spectrum views:
+
+```text
+hI[1,b], hI[2,b] = image encoder outputs
+hS[1,b], hS[2,b] = spectrum encoder outputs
+
+zI[v,b] = image cross-modal head(hI_cls[v,b])
+zS[v,b] = spectrum cross-modal head(hS_cls[v,b])
+```
+
+Image views should use the accepted image masking and augmentation policy.
+Spectrum views should use the DESI v2 validity, mean/std normalization,
+uncertainty noise, and artificial wavelength masking contract.
+
+The views must preserve object identity. Augmentations that erase the shared
+astrophysical signal would make cross-modal agreement impossible or encourage
+shortcuts.
+
+## Unimodal Objectives
+
+Unimodal global and local losses were considered for the first joint run. The
+selected experiment does **not** include them. This makes the scientific
+question cleaner: can paired cross-modal consistency plus SIGReg alone shape
+useful image and spectrum backbones from random initialization?
+
+This choice intentionally gives up use of unpaired examples and does not
+directly protect modality-private information. Those are properties to measure,
+not assumptions to hide with auxiliary losses. The independently pretrained
+then aligned model will test the alternative in which unimodal structure is
+learned before cross-modal alignment.
+
+## Direct Cross-Modal LeJEPA Objective
+
+The selected objective uses only cross-modality pairings. For two image views
+and two spectrum views:
+
+```text
+L_cross_invariance = mean over b,v,w of
+    ||z_image[v,b] - z_spectrum[w,b]||^2
+
+(v, w) in {(1,1), (1,2), (2,1), (2,2)}
+```
+
+There is no explicit image-to-image or spectrum-to-spectrum term. Both image
+views must agree with both spectrum views, so within-modality consistency is
+induced transitively through the paired modality. Gradients flow through both
+sides of every pair; there is no stop-gradient, EMA teacher, or target encoder.
+
+### Cross-modal SIGReg
+
+Apply SIGReg to each modality separately:
+
+```text
+L_cross_sigreg = 0.5 * SIGReg(zI) + 0.5 * SIGReg(zS)
+
+L = (1 - lambda_cross) * L_cross_invariance
+    + lambda_cross/2 * (SIGReg(z_image) + SIGReg(z_spectrum))
+```
+
+Separate regularization matters. A SIGReg term computed only on a concatenated
+image-spectrum population could look healthy while one modality collapses or
+the modalities occupy different parts of the distribution.
+
+The initial candidate is `lambda_cross = 0.05`, matching the existing LeJEPA
+setting. This is a starting point, not an accepted full-run value.
+
+Do not L2-normalize the cross embeddings during SIGReg training. SIGReg is
+trying to shape an isotropic Gaussian distribution, whereas unit normalization
+forces embeddings onto a hypersphere. L2 normalization can be applied at
+retrieval time if cosine similarity is evaluated.
+
+## Total Joint Objective
+
+For the selected first experiment, the equation above is the complete training
+objective. There are no `alpha_image`, `alpha_spectrum`, local-loss, or
+cross-loss curriculum coefficients. Optimization still uses learning-rate
+warmup, but the full cross-modal objective is active from step one.
+
+## What Bidirectional Prediction Means
+
+With direct Euclidean alignment:
+
+```text
+||z_image - z_spectrum||^2
+```
+
+"image to spectrum" and "spectrum to image" are the same mathematical loss.
+Writing it twice changes only its scalar weight because both representations
+already receive gradients.
+
+Genuinely directional prediction requires separate predictors:
+
+```text
+predicted_spectrum = P_image_to_spectrum(z_image)
+predicted_image = P_spectrum_to_image(z_spectrum)
+
+L_directional = ||predicted_spectrum - z_spectrum||^2
+                + ||predicted_image - z_image||^2
+```
+
+In a teacher-free version, both targets remain trainable and SIGReg is applied
+to the target embedding distributions. There is no stop-gradient or EMA target.
+
+Directional predictors are a valuable second experiment because each mapping
+can represent modality asymmetry. They should not be part of the first direct
+alignment run: they add parameters, can absorb coordinate mismatches that the
+backbones fail to resolve, and complicate comparison with LeJEPA.
+
+## Local Cross-Modal Learning
+
+There is no natural one-to-one correspondence between an image patch and a
+wavelength patch. Directly aligning image token `(x,y)` with spectrum token
+`lambda_j` would be physically unjustified.
+
+The first model should therefore use:
+
+- local image-to-image LeJEPA;
+- local spectrum-to-spectrum LeJEPA;
+- global image-spectrum LeJEPA.
+
+A later model can introduce `K` shared latent query slots. Image tokens and
+spectrum tokens would each predict the same indexed slots, while modality-local
+tokens remain private. The slots might learn shared factors such as stellar
+population, dust, emission activity, or morphology, but those interpretations
+must be tested rather than assumed.
+
+Another later option is conditional target-token prediction:
+
+- spectrum context predicts selected image target embeddings conditioned on 2D
+  position;
+- image context predicts selected spectrum target embeddings conditioned on
+  wavelength position.
+
+This is more JEPA-like in the I-JEPA predictive sense, but it confronts real
+conditional ambiguity. A spectrum does not determine galaxy orientation or
+background pixels, and an image does not determine every narrow spectral line.
+The direct global experiment should establish a healthy shared latent before
+attempting this.
+
+## Paired Data Audit And Contract
+
+The selected objective can use only paired examples.
+
+### Local DR8-DESI audit, not selected for training
+
+The initially audited local sources were:
+
+- images: `/mnt/datasets/utbd_pranav/galaxies/with_crops/*.parquet`;
+- image coordinates: `/mnt/datasets/utbd_pranav/galaxies/metadata.parquet`;
+- spectra: `/mnt/datasets/utbd_pranav/desi_edr_sv3/mmu_desi_edr_sv3/dataset/**/*.parquet`.
+
+The image and spectrum rows are not distributed as pre-paired records. Image
+rows use a Legacy Surveys DR8 `dr8_id`. DESI `object_id` is a packed TARGETID;
+its `RELEASE` field is DR9 for the audited examples. Decoding TARGETID to
+`BRICKID_OBJID` therefore does not produce a valid DR8 join key.
+
+The candidate join was a nearest-neighbor sky-coordinate match using RA/Dec
+with a maximum separation of 1 arcsec. The 2026-08-23 audit found:
+
+- 8,689,370 rows in the image metadata catalog;
+- 1,126,441 DESI EDR SV3 spectrum rows;
+- 79,768 spectrum observations with an image within 1 arcsec;
+- 78,826 unique matched images;
+- 942 additional spectrum observations assigned to an already matched image;
+- 116 matches with a second image candidate within 1 arcsec.
+
+Ambiguous matches are excluded. Repeated spectra may be retained, but all rows
+sharing one image identity must be assigned to the same split. Splits are made
+by a stable hash of `dr8_id`, never independently by row, to prevent physical
+object leakage.
+
+A materialization attempt found that 153 matched image IDs, covering 154 pair
+rows, were not present in the physical `with_crops` shards. It was stopped at
+the user's direction before any paired cache was completed. The empty partial
+output was removed. This custom DR8-DESI path is retained only as an audit and
+is not the selected training source.
+
+### Multimodal Universe native crossmatching
+
+The original Multimodal Universe paper does not claim that every survey is
+distributed as one pre-paired table. Each survey remains primarily unimodal.
+The framework creates multimodal intersections by matching sky coordinates. Its
+appendix demonstrates `cross_match_datasets(left, right, matching_radius=1.0)`
+using locally downloaded MMU dataset builders and returning a new Hugging Face
+dataset. MMU explicitly notes that cross-survey intersections can be much
+smaller than the parent datasets.
+
+MMU v1.5 now provides a preferable implementation through HATS and LSDB.
+Surveys are partitioned into adaptive HEALPix Parquet tiles. LSDB identifies
+overlapping tile pairs, runs a KD-tree angular match only inside those tiles,
+and can stream result partitions lazily instead of materializing both parent
+catalogs in memory.
+
+A ready-made `EiffL/desi_legacysurvey_xmatch` dataset is also available. Its
+dataset card reports 95,895 same-object galaxies and approximately 72 GB of
+sharded data. It was built at 1 arcsec with LSDB by joining MMU DESI PROVABGS,
+DESI EDR SV3 spectra, and Legacy Survey DR10 south imaging. It contains the
+DESI spectrum struct, four-band 160x160 image products, an RGB PNG, match
+distances, and PROVABGS properties. The median reported separation is about
+0.01 arcsec.
+
+On 2026-08-24, direct training on the ready-made MMU crossmatch was selected.
+The downloaded and verified snapshot is:
+
+- path: `/mnt/datasets/pranav/desi_legacysurvey_xmatch`;
+- Hugging Face revision: `b18e891d67208fb81dd02d2a6ea0f5d759b6a11e`;
+- 95,895 rows in 477 Parquet shards;
+- 76.737 GB on disk.
+
+The trainer streams native records directly and does not materialize another
+copy. It decodes the 160x160 `rgb` PNG for the existing three-channel image
+encoder and passes the native `spectrum` struct to the DESI v2 transform. The
+spectrum arrays have the expected 7,781-pixel fixed grid.
+
+Splits use a stable hash of `object_id_ls`, rather than row order, because this
+is the physical image identity. The audit found 95,879 unique image IDs and 16
+repeated rows; grouping on image identity prevents those repeats from crossing
+splits. Seed 42 produced:
+
+- train: 93,986 rows;
+- validation: 945 rows;
+- test: 964 rows.
+
+A small per-file split index beside the dataset lets the iterable loader assign
+files without overlap and balance ranks by actual training rows. With four
+ranks and four workers per rank, row counts are `[23497, 23497, 23496, 23496]`.
+At batch size 8, every rank therefore performs exactly 2,937 steps per epoch;
+only two surplus training rows are dropped each epoch.
+
+A ten-step production-sized smoke test passed on four A100 80 GB GPUs. It loaded
+native records through all 16 workers, trained the 400,526,080-parameter model,
+completed forward, distributed SIGReg, backward, clipping, optimizer, scheduler,
+logging, and clean DDP shutdown without OOMs, NaNs, or data exhaustion. The final
+checkpoint was written successfully and measured 4.5 GB.
+
+A four-rank resume smoke test then restored model, optimizer, scheduler, scaler,
+SIGReg state, RNG state, global step, and in-epoch position successfully.
+
+## Training Curriculum
+
+Both encoders start randomly. A provisional curriculum is:
+
+1. Initialize both encoders and both shared-space projectors randomly.
+2. Apply the complete cross-modal invariance plus SIGReg objective from step one.
+3. Warm up the optimizer learning rate, not the objective weight.
+4. Continue joint optimization of both encoders and heads for the full run.
+
+No pretrained backbone, frozen teacher, EMA target, or post-training stage is
+used in the primary experiment.
+
+## Main Failure Modes
+
+### Constant collapse
+
+All objects map to one vector. Separate image and spectrum SIGReg, effective
+rank, per-dimension standard deviation, and covariance diagnostics address this.
+
+### Shortcut representation
+
+SIGReg prevents constant collapse but does not guarantee rich astrophysical
+content. The shared embedding could spread objects using only redshift, color,
+signal-to-noise, calibration, or survey artifacts.
+
+Monitor shared-neighbor consistency for morphology and physical properties,
+probe each property separately, and train a modality classifier on the shared
+embeddings. A powerful modality classifier indicates incomplete alignment.
+
+### Loss domination
+
+Cross-modal gradients could erase useful unimodal structure, or one encoder
+could move much faster than the other. Track per-branch losses, gradient norms,
+and frozen unimodal probes throughout training.
+
+### Pair noise
+
+Incorrect joins, duplicated objects, aperture mismatch, poor spectra, or image
+contamination create false positives. A non-contrastive loss will still force
+these pairs together, so data auditing is essential.
+
+### Shared-information bottleneck
+
+The shared head may improve redshift and retrieval while harming morphology or
+detailed spectral tasks. Keep the full modality-specific backbone outputs and
+judge them separately from the shared head.
+
+## Evaluation Plan
+
+### Cross-modal alignment
+
+- image-to-spectrum and spectrum-to-image Recall@K;
+- median retrieval rank;
+- paired distance versus shuffled-pair distance;
+- retrieval conditioned on redshift bins and object class;
+- physical-property consistency among cross-modal nearest neighbors.
+
+### Unimodal representation quality
+
+- frozen image redshift, morphology, and property probes;
+- frozen spectrum redshift, classification, and property probes;
+- image and spectrum local-feature diagnostics;
+- comparison of full backbone CLS against the shared cross-modal head.
+
+### Collapse and geometry
+
+- feature standard deviation and covariance;
+- effective rank;
+- SIGReg values for each modality separately;
+- modality classification accuracy in the shared space;
+- CKA or canonical-correlation diagnostics between paired representations.
+
+### Missing-modality behavior
+
+- image-only inference;
+- spectrum-only inference;
+- optional fused inference if a later fusion model is introduced.
+
+## Required Experimental Controls
+
+1. From-scratch cross-modal LeJEPA with separate image and spectrum SIGReg.
+2. The identical scratch run with SIGReg disabled, testing whether collapse
+   prevention is causally necessary.
+3. The pretrained image and spectrum checkpoints followed by alignment with the
+   same shared heads, paired data, and cross-modal objective.
+4. The independently pretrained checkpoints before alignment, measuring what
+   alignment adds and what it erases.
+5. A scratch run with a different explicit anti-collapse regularizer, testing
+   whether the result is specific to SIGReg rather than regularization generally.
+6. From-scratch directional predictors as a later objective ablation.
+7. A shared-transformer model as a later architecture ablation.
+
+The comparison between controls 1 and 3 is the main scientific result; control
+2 is the causal SIGReg ablation. Paired-stage data, split, shared dimension,
+augmentations, optimizer budget, and evaluation must match. Total unimodal
+pretraining data and compute must also be reported separately rather than hidden
+from the comparison.
+
+## Selected First Experiment
+
+- Train two separate modality encoders jointly from random initialization.
+- Use two image views and two spectrum views.
+- Align only the four global image-spectrum combinations.
+- Apply SIGReg separately to image and spectrum shared embeddings.
+- Use no local, image-image, or spectrum-spectrum objective.
+- Use no EMA teacher, stop-gradient, negatives, or directional predictor.
+- Keep both full backbone CLS outputs and the shared-space projections in
+  checkpoints.
+- Train only on scientifically matched pairs and split by physical image ID.
+- Treat local objectives, unimodal objectives, directional predictors, shared
+  slots, and shared transformers as named follow-up ablations.
+
+## Checkpoint Policy
+
+- Write a full resumable `step_<global_step>.pt` every 1,000 optimizer steps and
+  retain the latest two periodic snapshots.
+- Write a full resumable `epoch_<epoch_number>.pt` after every completed epoch
+  and retain the latest five epoch snapshots by default.
+- Overwrite `last.pt` at every epoch boundary and controlled early stop so it
+  remains the normal recovery checkpoint.
+- Do not label a partial epoch caused by `--max-steps` as an epoch checkpoint.
+- Make epoch retention configurable with `--keep-last-epoch-checkpoints` to
+  bound local storage use.
+
+## Remaining Decisions For A Full Run
+
+1. Choose the existing 95,895-row paired dataset or a broader lazy LSDB
+   crossmatch as the training source.
+2. Choose the shared embedding dimension after the smoke test; implementation
+   default is 256.
+3. Choose the full training step or epoch budget.
+4. Choose the primary checkpoint-selection metric.
+5. Define compute-matched post-trained and no-cross controls.
+6. Decide whether cross-modal retrieval uses Euclidean distance, cosine
+   similarity, or both during evaluation.
+
+## Decision History
+
+### 2026-08-23
+
+- Established joint image-spectrum training from random initialization as the
+  principal research direction.
+- Distinguished joint-from-scratch training from post-trained alignment.
+- Proposed separate modality backbones with a shared latent space.
+- Proposed global symmetric cross-modal LeJEPA with separate SIGReg terms.
+- Kept local objectives within modality for the first experiment.
+- Reserved directional predictors, shared latent slots, and a shared transformer
+  for controlled follow-up studies.
+- Superseded the initial recommendation to retain unimodal/local losses: the
+  selected first experiment is cross-modal global alignment plus SIGReg only.
+- Selected the all-four-pair cross-invariance equation rather than the four-view
+  center equation.
+- Completed the local data audit and selected a 1 arcsec positional join because
+  DR8 image IDs cannot be joined directly to DR9 DESI TARGETIDs.
+- Authorized implementation and a 1,000-step smoke test, but not a full run.
+- Implemented and unit-tested the exact cross-only objective and two-encoder
+  training draft; no smoke training was launched.
+- Stopped the custom local pair-cache build at the user's direction. No cache
+  was completed, and its empty partial output was removed.
+- Reviewed the MMU paper's coordinate-crossmatch contract and the newer HATS /
+  LSDB route.
+- Identified `EiffL/desi_legacysurvey_xmatch` as an existing 95,895-row DESI
+  spectrum plus Legacy DR10 image candidate, pending data-source approval.
+
+### 2026-08-25
+
+- Added full resumable snapshots after every completed cross-modal epoch.
+- Selected five retained epoch snapshots alongside two retained periodic step
+  snapshots and the rolling `last.pt` checkpoint.
+
+### 2026-08-29
+
+- Audited all paired and coordinate-matchable data physically present under the
+  local dataset mounts.
+- Confirmed that the current native MMU DESI plus Legacy Survey DR10 cross-match
+  was built with a 1.0 arcsec LSDB radius and contains 95,895 rows.
+- Confirmed that the locally loaded AstroCLIP mirror contains 197,976 pairs:
+  138,583 train, 29,696 validation, and 29,697 test. No DESI target IDs overlap
+  the native MMU paired set.
+- The benchmark-safe union of the two existing training splits is therefore
+  232,569 distinct paired observations, subject to implementing a loader that
+  harmonizes their different schemas.
+- Re-ran a nearest-neighbor coordinate audit against 8,689,370 local DR8 image
+  coordinates. Acceptance requires the nearest image within 1.0 arcsec and no
+  second image within that radius.
+- DESI yields 79,652 accepted spectrum rows over 78,718 image identities; SDSS
+  yields 563,267 over 563,267 identities; VIPERS W1 yields only 34.
+- The combined coordinate manifest can contain 642,953 spectrum-image rows over
+  631,878 unique image identities. DESI and SDSS share 10,141 image identities,
+  while DESI contributes 934 repeated spectrum observations.
+- These are pre-materialization ceilings. Missing physical image rows, quality
+  cuts, duplicate policy, and schema validation can reduce the usable count.
+- Retained 1.0 arcsec as the default radius. Moving from 1.0 to 2.0 arcsec adds
+  only 676 accepted DESI and 1,988 accepted SDSS rows while increasing ambiguous
+  matches from 116 to 204 and 1,686 to 2,788, respectively.
+- Target-ID de-duplication showed that the 79,652 manual DESI matches overlap
+  31,436 native MMU pairs and 34,637 AstroCLIP pairs. Only 13,579 are new beyond
+  every loaded pre-matched split.
+- The strict training-safe DESI union is 246,148 distinct objects: 232,569 from
+  the existing MMU and AstroCLIP training splits plus 13,579 new manual matches.
+  Including held-out splits produces 307,450 unique DESI target IDs, not the
+  naive sum of approximately 374k.
+- Adding all 563,267 accepted SDSS rows gives a naive training ceiling of
+  809,415 spectrum-image observations before physical-object de-duplication.
+  At least 10,141 image identities have both DESI and SDSS observations.
+- The SDSS expansion is scientifically valuable but not drop-in compatible with
+  the fixed-grid DESI encoder; wavelength, resolution, masks, and survey
+  selection must be harmonized for a multi-survey run.
+
+### 2026-08-29: combined DESI scratch run
+
+The next scratch experiment intentionally uses every locally runnable DESI-image
+pair, without preserving the source datasets' historical train, validation, or
+test labels. This is a representation-pretraining corpus; downstream evaluation
+must use separately controlled object-level splits.
+
+The final materialized collection contains 307,428 pair rows:
+
+| Source | Rows | Spectrum contract | Image contract |
+| --- | ---: | --- | --- |
+| AstroCLIP mirror, all source splits | 197,976 | DESI flux only | raw g/r/z nanomaggies |
+| MMU DESI x Legacy DR10 | 95,895 | flux, ivar, wavelength, LSF, mask | rendered RGB PNG |
+| New manual DESI x DR8 matches | 13,557 | flux, ivar, wavelength, LSF, mask | DR8 crop |
+| **Total** | **307,428** | fixed 7,781-pixel DESI grid | two 140-pixel views |
+
+The coordinate audit originally found 13,579 new target IDs after excluding
+66,073 targets already present in AstroCLIP or MMU. During payload
+materialization, 21 DR8 image IDs were unavailable, removing 22 pair rows. No
+spectrum payload was missing. The runnable total is therefore 307,428 rather
+than the pre-materialization ceiling of 307,450.
+
+Source harmonization is explicit:
+
+- AstroCLIP raw nanomaggy images are converted with AstroCLIP's Legacy Survey
+  g/r/z arcsinh RGB mapping before the common astronomy image augmentations.
+- All spectra use per-spectrum valid-pixel mean/std normalization and the same
+  7,781-pixel DESI token grid.
+- MMU and manual spectra retain pipeline masks and ivar-based noise views.
+- AstroCLIP has flux only. Finite pixels are valid, and uncertainty noise is
+  disabled rather than creating synthetic ivar.
+- The loader logs the source mixture and the fraction of examples carrying
+  physical uncertainty information.
+
+The old Hugging Face streaming loader had a material epoch-accounting bug. It
+manually assigned files to workers and Hugging Face then sharded those files
+again internally. The prior 95k run therefore stopped each nominal epoch after
+only a fraction of its indexed rows. The new collection loader streams Parquet
+directly, balances files once across ranks and workers, and computes epoch length
+from worker-usable batches. On eight GPUs with batch size 32 per GPU, every rank
+has exactly 1,200 usable batches per epoch. Each epoch consumes 307,200 of
+307,428 rows; the sub-0.1% file-balance remainder rotates because file and
+row-group order are reshuffled each epoch.
+
+The official LeJEPA distributed SIGReg behavior was checked against the authors'
+repository. Our vendored implementation already matches it: random slice seeds
+are synchronized, Epps-Pulley cosine and sine moments use autograd-aware
+distributed averaging, and the statistic applies the required local-N times
+world-size scaling. Full embedding all-gather is neither needed nor added.
+
+Selected training configuration:
+
+- two image views and two spectrum views;
+- all four cross-modal global MSE pairings;
+- separate image and spectrum SIGReg terms;
+- no image-image, spectrum-spectrum, or local-patch objective;
+- ViT-L image encoder and 12-layer, 768-dimensional DESI transformer from
+  scratch;
+- batch size 32 per GPU, global batch 256 on eight GPUs;
+- 50 true epochs, 1,200 steps per epoch, 60,000 optimizer steps;
+- AdamW, learning rate 1e-4, weight decay 0.05, 1,000-step warmup, cosine decay;
+- W&B run name
+  `CrossModalScratch_DESI307K_AllPairs_CrossOnly_SIGReg`;
+- periodic checkpoints every 2,000 steps, retaining two;
+- rolling `last.pt` after every epoch;
+- named epoch checkpoints every five epochs, retaining five.
+
+Validation completed before release:
+
+- Python compilation passed for the trainer, loaders, transforms, and builder.
+- Cross-modal unit/regression tests passed.
+- Real samples from all three source formats produced identical model-facing
+  image and spectrum tensor shapes.
+- A two-step, eight-A100 distributed smoke test completed forward, distributed
+  SIGReg, backward, gradient clipping, optimizer update, scheduler update, and
+  final checkpoint writing without error.

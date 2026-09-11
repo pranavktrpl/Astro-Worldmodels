@@ -1,0 +1,158 @@
+{
+  "cca": {
+    "regularization": 0.001,
+    "test_all_mean": 0.21178894648163266,
+    "test_top1": 0.9837657806055792,
+    "test_top10_mean": 0.9156098186760042,
+    "test_top50_mean": 0.6750336663774827,
+    "train_top_canonical_correlation": 0.9828373279104303
+  },
+  "model": "joint",
+  "procrustes": {
+    "fit_rows": 138583,
+    "heldout_rows": 29697,
+    "image_to_spectrum": {
+      "after": {
+        "matched_cosine_mean": 0.8056192398071289,
+        "matched_cosine_std": 0.19274115562438965,
+        "matched_minus_random": 0.8037537336349487,
+        "mean_rank": 866.2021079570327,
+        "median_rank": 365.0,
+        "mrr": 0.020934121166350784,
+        "num_queries": 29697,
+        "random_cosine_mean": 0.0018654923187568784,
+        "recall_at_1": 0.005421423039364245,
+        "recall_at_10": 0.0416540391285315,
+        "recall_at_5": 0.023066302993568374
+      },
+      "before": {
+        "matched_cosine_mean": 0.779606819152832,
+        "matched_cosine_std": 0.1963988095521927,
+        "matched_minus_random": 0.7779799699783325,
+        "mean_rank": 933.4338822103243,
+        "median_rank": 420.0,
+        "mrr": 0.018331616905476873,
+        "num_queries": 29697,
+        "random_cosine_mean": 0.0016268505714833736,
+        "recall_at_1": 0.004411219988551032,
+        "recall_at_10": 0.035424453648516686,
+        "recall_at_5": 0.019294878270532376
+      }
+    },
+    "preprocessing": "per-modality train mean/std before orthogonal fit",
+    "spectrum_to_image": {
+      "after": {
+        "matched_cosine_mean": 0.8056192398071289,
+        "matched_cosine_std": 0.19274115562438965,
+        "matched_minus_random": 0.8046452403068542,
+        "mean_rank": 880.660942182712,
+        "median_rank": 382.0,
+        "mrr": 0.0185541646304319,
+        "num_queries": 29697,
+        "random_cosine_mean": 0.0009739743545651436,
+        "recall_at_1": 0.004478566858605247,
+        "recall_at_10": 0.03448159746775768,
+        "recall_at_5": 0.01949691888069502
+      },
+      "before": {
+        "matched_cosine_mean": 0.779606819152832,
+        "matched_cosine_std": 0.1963988095521927,
+        "matched_minus_random": 0.7790794968605042,
+        "mean_rank": 948.9070613193252,
+        "median_rank": 443.0,
+        "mrr": 0.015091984720272376,
+        "num_queries": 29697,
+        "random_cosine_mean": 0.0005273487186059356,
+        "recall_at_1": 0.0030306091524396404,
+        "recall_at_10": 0.028353032292824192,
+        "recall_at_5": 0.015624473852577701
+      }
+    }
+  },
+  "ridge": {
+    "image_to_spectrum": {
+      "candidates": [
+        {
+          "l2": 0.0001,
+          "validation_global_r2": 0.7467451095581055
+        },
+        {
+          "l2": 0.01,
+          "validation_global_r2": 0.746745228767395
+        },
+        {
+          "l2": 1.0,
+          "validation_global_r2": 0.746751070022583
+        },
+        {
+          "l2": 100.0,
+          "validation_global_r2": 0.7461255788803101
+        },
+        {
+          "l2": 10000.0,
+          "validation_global_r2": 0.7391785979270935
+        }
+      ],
+      "explained_variance_weighted": 0.7492594718933105,
+      "global_r2": 0.7492475509643555,
+      "mean_cosine": 0.8398414850234985,
+      "predicted_retrieval": {
+        "matched_cosine_mean": 0.8398416638374329,
+        "matched_cosine_std": 0.16918647289276123,
+        "matched_minus_random": 0.8361602425575256,
+        "mean_rank": 829.0120214163047,
+        "median_rank": 358.0,
+        "mrr": 0.0196018511877983,
+        "num_queries": 29697,
+        "random_cosine_mean": 0.00368144060485065,
+        "recall_at_1": 0.004646934033740782,
+        "recall_at_10": 0.03818567532073947,
+        "recall_at_5": 0.020136714146210054
+      },
+      "selected_l2": 1.0,
+      "uniform_mean_dimension_r2": 0.7492231130599976
+    },
+    "spectrum_to_image": {
+      "candidates": [
+        {
+          "l2": 0.0001,
+          "validation_global_r2": 0.7322018146514893
+        },
+        {
+          "l2": 0.01,
+          "validation_global_r2": 0.7322019338607788
+        },
+        {
+          "l2": 1.0,
+          "validation_global_r2": 0.732209324836731
+        },
+        {
+          "l2": 100.0,
+          "validation_global_r2": 0.7306101322174072
+        },
+        {
+          "l2": 10000.0,
+          "validation_global_r2": 0.7114461660385132
+        }
+      ],
+      "explained_variance_weighted": 0.7364605665206909,
+      "global_r2": 0.7364509701728821,
+      "mean_cosine": 0.8300796151161194,
+      "predicted_retrieval": {
+        "matched_cosine_mean": 0.8300796747207642,
+        "matched_cosine_std": 0.1733170598745346,
+        "matched_minus_random": 0.8292611241340637,
+        "mean_rank": 725.6275044617302,
+        "median_rank": 313.0,
+        "mrr": 0.022942749119146046,
+        "num_queries": 29697,
+        "random_cosine_mean": 0.0008185494807548821,
+        "recall_at_1": 0.006162238609960602,
+        "recall_at_10": 0.044785668586052464,
+        "recall_at_5": 0.024581607569788194
+      },
+      "selected_l2": 1.0,
+      "uniform_mean_dimension_r2": 0.7363912463188171
+    }
+  }
+}

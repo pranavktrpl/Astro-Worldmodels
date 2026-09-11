@@ -1,4 +1,6 @@
 from datasets import load_dataset
+from pathlib import Path
+import pyarrow.parquet as pq
 
 
 class DesiSpectraSource():
@@ -30,8 +32,42 @@ class DesiSpectraSource():
         self.dataset = dataset
         self.columns = columns
         self.split = split
+        dataset_path = Path(dataset)
+        self.parquet_files = (
+            sorted(dataset_path.rglob("*.parquet")) if dataset_path.exists() else None
+        )
 
-    def load_dataset(self):
+    def balanced_file_shards(self, num_shards):
+        if self.parquet_files is None:
+            return None
+        if num_shards < 1:
+            raise ValueError("num_shards must be positive")
+
+        files_with_rows = [
+            (path, pq.ParquetFile(path).metadata.num_rows)
+            for path in self.parquet_files
+        ]
+        assignments = [[] for _ in range(num_shards)]
+        assigned_rows = [0 for _ in range(num_shards)]
+        for path, rows in sorted(files_with_rows, key=lambda item: item[1], reverse=True):
+            shard_id = min(range(num_shards), key=assigned_rows.__getitem__)
+            assignments[shard_id].append(str(path))
+            assigned_rows[shard_id] += rows
+        return assignments
+
+    def load_dataset(self, data_files=None):
+        if self.parquet_files is not None:
+            parquet_files = data_files or [str(path) for path in self.parquet_files]
+            if not parquet_files:
+                raise FileNotFoundError(f"No Parquet files found under {self.dataset}")
+            return load_dataset(
+                "parquet",
+                data_files={"train": parquet_files},
+                columns=self.columns,
+                split=self.split,
+                streaming=True,
+            )
+
         dataset = load_dataset(self.dataset, columns=self.columns, split=self.split, streaming=True)
         return dataset
 

@@ -1,0 +1,82 @@
+{
+  "comparisons": {
+    "independent_to_joint_raw_image": {
+      "linear_cka_test": 0.4505371153354645,
+      "neighbor_overlap": {
+        "10": 0.08424419975081658,
+        "100": 0.14331245580361654,
+        "50": 0.12175236555881065
+      },
+      "pairwise_cosine_spearman": 0.3465438269367245,
+      "states": [
+        "U_I",
+        "J_I_raw"
+      ]
+    },
+    "independent_to_joint_raw_spectrum": {
+      "linear_cka_test": 0.39751580357551575,
+      "neighbor_overlap": {
+        "10": 0.022588140216183453,
+        "100": 0.07501431120988653,
+        "50": 0.05300266020136714
+      },
+      "pairwise_cosine_spearman": 0.2801086137919967,
+      "states": [
+        "U_S",
+        "J_S_raw"
+      ]
+    },
+    "independent_to_sequential_image": {
+      "linear_cka_test": 0.4431152641773224,
+      "neighbor_overlap": {
+        "10": 0.05172239620163653,
+        "100": 0.10784052261171162,
+        "50": 0.08471832171599825
+      },
+      "pairwise_cosine_spearman": 0.3556084760912444,
+      "states": [
+        "U_I",
+        "S_I"
+      ]
+    },
+    "independent_to_sequential_spectrum": {
+      "linear_cka_test": 0.5202121138572693,
+      "neighbor_overlap": {
+        "10": 0.12597568777991042,
+        "100": 0.22463413812843047,
+        "50": 0.18936862309324173
+      },
+      "pairwise_cosine_spearman": 0.5028044255920296,
+      "states": [
+        "U_S",
+        "S_S"
+      ]
+    },
+    "sequential_to_joint_image": {
+      "linear_cka_test": 0.6784806251525879,
+      "neighbor_overlap": {
+        "10": 0.04087955012290804,
+        "100": 0.17755295147658012,
+        "50": 0.11675522780078795
+      },
+      "pairwise_cosine_spearman": 0.4325158860986276,
+      "states": [
+        "S_I",
+        "J_I"
+      ]
+    },
+    "sequential_to_joint_spectrum": {
+      "linear_cka_test": 0.6480585336685181,
+      "neighbor_overlap": {
+        "10": 0.015725494157659024,
+        "100": 0.0763171364110853,
+        "50": 0.04724989056133616
+      },
+      "pairwise_cosine_spearman": 0.45943671341513675,
+      "states": [
+        "S_S",
+        "J_S"
+      ]
+    }
+  }
+}

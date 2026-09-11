@@ -1,0 +1,7 @@
+comparison,left,right,linear_cka,pairwise_cosine_spearman,neighbor_overlap_at_10,neighbor_overlap_at_50,neighbor_overlap_at_100
+independent_to_joint_raw_image,U_I,J_I_raw,0.450537,0.346544,0.084244,0.121752,0.143312
+independent_to_joint_raw_spectrum,U_S,J_S_raw,0.397516,0.280109,0.022588,0.053003,0.075014
+independent_to_sequential_image,U_I,S_I,0.443115,0.355608,0.051722,0.084718,0.107841
+independent_to_sequential_spectrum,U_S,S_S,0.520212,0.502804,0.125976,0.189369,0.224634
+sequential_to_joint_image,S_I,J_I,0.678481,0.432516,0.040880,0.116755,0.177553
+sequential_to_joint_spectrum,S_S,J_S,0.648059,0.459437,0.015725,0.047250,0.076317

@@ -1,0 +1,9 @@
+regime,modality,representation,redshift,stellar_mass,metallicity,age,ssfr
+Sequential,Image,projected,0.511772,0.672491,0.400697,0.210183,0.497528
+Sequential,Image,raw,0.529581,0.690860,0.412607,0.240670,0.500750
+Sequential,Spectrum,projected,0.573527,0.714941,0.427080,0.253727,0.532742
+Sequential,Spectrum,raw,0.555002,0.694973,0.409451,0.228365,0.495750
+Joint,Image,projected,0.613104,0.768012,0.459308,0.278290,0.563879
+Joint,Image,raw,0.626759,0.806040,0.474290,0.314054,0.591320
+Joint,Spectrum,projected,0.632093,0.779902,0.448309,0.273529,0.569867
+Joint,Spectrum,raw,0.675433,0.842477,0.549144,0.362667,0.639299

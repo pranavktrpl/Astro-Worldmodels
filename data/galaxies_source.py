@@ -1,5 +1,6 @@
 from PIL import Image
 from datasets import load_dataset
+from pathlib import Path
 
 class GalaxiesSource():
     def __init__(self, dataset="Smith42/galaxies", columns=["image", "image_crop", "galaxy_size"], split="train"):
@@ -8,6 +9,18 @@ class GalaxiesSource():
         self.split = split
 
     def load_dataset(self):
+        dataset_path = Path(self.dataset)
+        if dataset_path.exists():
+            parquet_files = sorted(dataset_path.rglob("*.parquet"))
+            if not parquet_files:
+                raise FileNotFoundError(f"No Parquet files found under {self.dataset}")
+            return load_dataset(
+                "parquet",
+                data_files={"train": [str(path) for path in parquet_files]},
+                columns=self.columns,
+                split="train",
+                streaming=True,
+            )
         dataset = load_dataset(self.dataset, columns=self.columns, split=self.split, streaming=True)
         return dataset
 

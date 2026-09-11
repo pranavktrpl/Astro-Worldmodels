@@ -1,0 +1,84 @@
+{
+  "created_unix": 1788273875.7607987,
+  "dataset": {
+    "data_dir": "/mnt/datasets/pranav/astroclip",
+    "property_rows": 89334,
+    "property_test_rows": 15993,
+    "property_train_rows": 73341,
+    "provabgs": "/mnt/datasets/utbd_pranav/catalogs/desi_provabgs/mmu_desi_provabgs/dataset",
+    "row_order": "sorted train shards followed by sorted test shards",
+    "rows": 168280,
+    "test_rows": 29697,
+    "train_rows": 138583
+  },
+  "spaces": {
+    "C_I": {
+      "checkpoint": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/CrossModalScratch_DESI307K_AllPairs_CLIP_InfoNCE/last.pt",
+      "global_step": 120000,
+      "metadata_sha256": "57960de22e050e2b4e2406834d6c84af879ba101fdc26cb89cebe75e6ad9b7ba",
+      "root": "/mnt/datasets/pranav/astrojepa_eval_cache/crossmodal_scratch_clip_307k_final_image",
+      "saved_epoch": 50,
+      "shapes": {
+        "projected": [
+          168280,
+          256
+        ],
+        "raw": [
+          168280,
+          1024
+        ]
+      }
+    },
+    "C_S": {
+      "checkpoint": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/CrossModalScratch_DESI307K_AllPairs_CLIP_InfoNCE/last.pt",
+      "global_step": 120000,
+      "metadata_sha256": "28700c273d9b8e5d96991fa4ad4c88b7fd7c77d5cf5d2779891e3a1f87fe7bd0",
+      "root": "/mnt/datasets/pranav/astrojepa_eval_cache/crossmodal_scratch_clip_307k_final_spectrum",
+      "saved_epoch": 50,
+      "shapes": {
+        "projected": [
+          168280,
+          256
+        ],
+        "raw": [
+          168280,
+          768
+        ]
+      }
+    },
+    "J_I": {
+      "checkpoint": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/CrossModalScratch_DESI307K_AllPairs_CrossOnly_SIGReg_4GPU/last.pt",
+      "global_step": 60000,
+      "metadata_sha256": "5dde8f31a3c6536d145ed5ac4f678486a4838e738265e1c8d474e3a8cb7f0f69",
+      "root": "/mnt/datasets/pranav/astrojepa_eval_cache/crossmodal_scratch_307k_last_image",
+      "saved_epoch": 50,
+      "shapes": {
+        "projected": [
+          168280,
+          256
+        ],
+        "raw": [
+          168280,
+          1024
+        ]
+      }
+    },
+    "J_S": {
+      "checkpoint": "/mnt/ssd-cluster/pranav/Astro-Worldmodels/checkpoints/CrossModalScratch_DESI307K_AllPairs_CrossOnly_SIGReg_4GPU/last.pt",
+      "global_step": 60000,
+      "metadata_sha256": "1a6c35f5b70a6f9be35cefbe35ddd7fa863dafb2aafe8408bb946f74e9ceb583",
+      "root": "/mnt/datasets/pranav/astrojepa_eval_cache/crossmodal_scratch_307k_last_spectrum",
+      "saved_epoch": 50,
+      "shapes": {
+        "projected": [
+          168280,
+          256
+        ],
+        "raw": [
+          168280,
+          768
+        ]
+      }
+    }
+  }
+}

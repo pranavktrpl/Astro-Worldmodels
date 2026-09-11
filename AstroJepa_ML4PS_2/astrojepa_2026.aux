@@ -1,0 +1,183 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldcontentsline\contentsline
+\gdef\contentsline#1#2#3#4{\oldcontentsline{#1}{#2}{#3}}
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\contentsline\oldcontentsline
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
+\providecommand*\HyPL@Entry[1]{}
+\citation{parker2024astroclip,parker2025aion}
+\citation{assran2023ijepa}
+\citation{balestriero2025lejepa}
+\HyPL@Entry{0<</S/D>>}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\newlabel{sec:intro}{{1}{1}{Introduction}{section.1}{}}
+\citation{desi2024edr,dey2019legacy}
+\citation{hahn2023provabgs}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces \textbf  {AstroJEPA\ and the two training strategies.} Both routes expose raw modality states $h_I,h_S$ and learn shared states $z_I,z_S$ with the same cross-modal invariance--SIGReg objective. Pretrain$\rightarrow $Align\ freezes independently trained backbones and updates two learned-query poolers; Joint-Scratch\ learns encoders and MLP projectors end to end. Dashed blue boxes are frozen and orange boxes are trainable. Full architectures and objectives are in Appendix\nobreakspace  {}\ref  {app:architecture}.}}{2}{figure.1}\protected@file@percent }
+\newlabel{fig:architecture}{{1}{2}{\textbf {\method \ and the two training strategies.} Both routes expose raw modality states $h_I,h_S$ and learn shared states $z_I,z_S$ with the same cross-modal invariance--SIGReg objective. \prealign \ freezes independently trained backbones and updates two learned-query poolers; \joint \ learns encoders and MLP projectors end to end. Dashed blue boxes are frozen and orange boxes are trainable. Full architectures and objectives are in Appendix~\ref {app:architecture}}{figure.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}AstroJEPA}{2}{section.2}\protected@file@percent }
+\newlabel{sec:method}{{2}{2}{\method }{section.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Encoders and objective.}{2}{section*.1}\protected@file@percent }
+\newlabel{eq:astrojepa}{{1}{2}{Encoders and objective}{equation.2.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Two training strategies.}{2}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Experiments}{3}{section.3}\protected@file@percent }
+\newlabel{sec:experiments}{{3}{3}{Experiments}{section.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Data and evaluation.}{3}{section*.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}AstroJEPA learns scientifically useful shared representations}{3}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:utility}{{3.1}{3}{AstroJEPA learns scientifically useful shared representations}{subsection.3.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces \textbf  {Frozen ridge-probe $R^2$\ on shared 256-d AstroJEPA\ representations.} Joint training improves all five properties for both modalities. Values are means over three probe seeds; standard deviations are below $8\times 10^{-4}$.}}{3}{table.1}\protected@file@percent }
+\newlabel{tab:main_probes}{{1}{3}{\textbf {Frozen ridge-probe \rscore \ on shared 256-d \method \^^Mrepresentations.} Joint training improves all five properties for both modalities. Values are means over three probe seeds; standard deviations are below $8\times 10^{-4}$}{table.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Joint learning outperforms frozen-pooler alignment}{3}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:strategy}{{3.2}{3}{Joint learning outperforms frozen-pooler alignment}{subsection.3.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces \textbf  {The implemented joint strategy wins across complementary criteria.} Scientific utility averages the five shared-space probes in Table\nobreakspace  {}\ref  {tab:main_probes}; map $R^2$\ and recall@10 are bidirectional means. CKA uses all 168,280 objects, while neighborhood overlap and retrieval use the 29,697-object test pool. Effective rank is computed from the 256-dimensional shared states.}}{3}{figure.2}\protected@file@percent }
+\newlabel{fig:training}{{2}{3}{\textbf {The implemented joint strategy wins across complementary criteria.} Scientific utility averages the five shared-space probes in Table~\ref {tab:main_probes}; map \rscore \ and recall@10 are bidirectional means. CKA uses all 168,280 objects, while neighborhood overlap and retrieval use the 29,697-object test pool. Effective rank is computed from the 256-dimensional shared states}{figure.2}{}}
+\citation{leung2024galaxy10}
+\citation{radford2021clip}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}What changes during cross-modal learning?}{4}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:change}{{3.3}{4}{What changes during cross-modal learning?}{subsection.3.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}A compact contrastive control}{4}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:clip}{{3.4}{4}{A compact contrastive control}{subsection.3.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Discussion}{4}{section.4}\protected@file@percent }
+\newlabel{sec:discussion}{{4}{4}{Discussion}{section.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Limitations and impact}{4}{section.5}\protected@file@percent }
+\newlabel{sec:limitations}{{5}{4}{Limitations and impact}{section.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Conclusion.}{4}{section*.4}\protected@file@percent }
+\bibstyle{plainnat}
+\bibdata{references}
+\bibcite{assran2023ijepa}{{1}{2023}{{Assran et~al.}}{{Assran, Duval, Misra, Bojanowski, Vincent, Rabbat, LeCun, and Ballas}}}
+\bibcite{balestriero2025lejepa}{{2}{2025}{{Balestriero and LeCun}}{{}}}
+\bibcite{desi2024edr}{{3}{2024}{{DESI Collaboration}}{{}}}
+\bibcite{dey2019legacy}{{4}{2019}{{Dey et~al.}}{{Dey, Schlegel, Lang, et~al.}}}
+\bibcite{hahn2023provabgs}{{5}{2023}{{Hahn et~al.}}{{Hahn, Kwon, Tojeiro, et~al.}}}
+\bibcite{leung2024galaxy10}{{6}{2024}{{Leung and Bovy}}{{}}}
+\bibcite{oquab2023dinov2}{{7}{2024}{{Oquab et~al.}}{{Oquab, Darcet, Moutakanni, Vo, Szafraniec, Khalidov, Fernandez, Haziza, Massa, El-Nouby, Assran, Ballas, Galuba, Howes, Huang, Li, Misra, Rabbat, Sharma, Synnaeve, Xu, J{\'e}gou, Mairal, Labatut, Joulin, and Bojanowski}}}
+\bibcite{parker2024astroclip}{{8}{2024}{{Parker et~al.}}{{Parker, Lanusse, Golkar, Sarra, Cranmer, Bietti, Eickenberg, Krawezik, McCabe, Ohana, Pettee, Regaldo-Saint~Blancard, Tesileanu, Cho, and Ho}}}
+\bibcite{parker2025aion}{{9}{2025}{{Parker et~al.}}{{Parker, Lanusse, Shen, Liu, Hehir, Sarra, Meyer, Bowles, Wagner-Carena, Qu, Golkar, Bietti, Bourfoune, Casserau, Cornette, Hirashima, Krawezik, Ohana, Lourie, McCabe, Morel, Mukhopadhyay, Pettee, Regaldo-Saint~Blancard, Cho, Cranmer, and Ho}}}
+\bibcite{radford2021clip}{{10}{2021}{{Radford et~al.}}{{Radford, Kim, Hallacy, Ramesh, Goh, Agarwal, Sastry, Askell, Mishkin, Clark, Krueger, and Sutskever}}}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Full AstroJEPA\ Architecture and Objectives}{6}{appendix.A}\protected@file@percent }
+\newlabel{app:architecture}{{A}{6}{Full \method \ Architecture and Objectives}{appendix.A}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Terminology and scope}{6}{subsection.A.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Backbones and heads}{6}{subsection.A.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Architecture used by the completed cross-modal runs.}}{6}{table.2}\protected@file@percent }
+\newlabel{tab:architecture}{{2}{6}{Architecture used by the completed cross-modal runs}{table.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Cross-modal AstroJEPA loss}{6}{subsection.A.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}Independent unimodal objectives}{6}{subsection.A.4}\protected@file@percent }
+\citation{leung2024galaxy10}
+\citation{leung2024galaxy10}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.5}Contrastive control}{7}{subsection.A.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {B}Data and Preprocessing}{7}{appendix.B}\protected@file@percent }
+\newlabel{app:data}{{B}{7}{Data and Preprocessing}{appendix.B}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.1}Corpus inventory}{7}{subsection.B.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Datasets used for representation training and evaluation. Counts are objects after the stated local filtering; Galaxy10 DECaLS is from \citet  {leung2024galaxy10}.}}{7}{table.3}\protected@file@percent }
+\newlabel{tab:data_inventory}{{3}{7}{Datasets used for representation training and evaluation. Counts are objects after the stated local filtering; Galaxy10 DECaLS is from \citet {leung2024galaxy10}}{table.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Composition and harmonization of the 307,428-pair corpus.}}{7}{table.4}\protected@file@percent }
+\newlabel{tab:pair_sources}{{4}{7}{Composition and harmonization of the 307,428-pair corpus}{table.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.2}Augmentations}{7}{subsection.B.2}\protected@file@percent }
+\citation{oquab2023dinov2,parker2025aion}
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.3}Evaluation leakage boundary}{8}{subsection.B.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {C}Training and Evaluation Details}{8}{appendix.C}\protected@file@percent }
+\newlabel{app:training}{{C}{8}{Training and Evaluation Details}{appendix.C}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Completed principal training runs. Samples counts source-object presentations, not augmented views.}}{8}{table.5}\protected@file@percent }
+\newlabel{tab:training_runs}{{5}{8}{Completed principal training runs. Samples counts source-object presentations, not augmented views}{table.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Frozen probes.}{8}{section*.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Alignment diagnostics.}{8}{section*.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {D}Independent Unimodal SSL}{8}{appendix.D}\protected@file@percent }
+\newlabel{app:unimodal}{{D}{8}{Independent Unimodal SSL}{appendix.D}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.1}Image SSL}{8}{subsection.D.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Controlled Galaxy10 frozen linear probes.}}{8}{table.6}\protected@file@percent }
+\newlabel{tab:image_galaxy10}{{6}{8}{Controlled Galaxy10 frozen linear probes}{table.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Fixed-seed image-redshift $R^2$\ over the ViT-L checkpoint series. The broad late plateau motivated selecting update 52k by Galaxy10 validation macro-F1 rather than redshift test performance.}}{9}{table.7}\protected@file@percent }
+\newlabel{tab:image_redshift_series}{{7}{9}{Fixed-seed image-redshift \rscore \ over the ViT-L checkpoint series. The broad late plateau motivated selecting update 52k by Galaxy10 validation macro-F1 rather than redshift test performance}{table.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.2}Spectrum SSL}{9}{subsection.D.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Frozen spectrum probe $R^2$. V2 is the corrected global+local LeJEPA run; projected is its 64-dimensional objective head.}}{9}{table.8}\protected@file@percent }
+\newlabel{tab:spectrum_ssl}{{8}{9}{Frozen spectrum probe \rscore . V2 is the corrected global+local LeJEPA run; projected is its 64-dimensional objective head}{table.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Linear and two-layer MLP probes on the Joint-Scratch\ raw spectrum state. The nonlinear head principally helps redshift and age.}}{9}{table.9}\protected@file@percent }
+\newlabel{tab:nonlinear}{{9}{9}{Linear and two-layer MLP probes on the \joint \ raw spectrum state. The nonlinear head principally helps redshift and age}{table.9}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {E}Cross-Modal Training: Pretrained vs.\ Scratch}{10}{appendix.E}\protected@file@percent }
+\newlabel{app:strategy}{{E}{10}{Cross-Modal Training: Pretrained vs.\ Scratch}{appendix.E}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.1}Complete downstream probes}{10}{subsection.E.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces All frozen ridge-probe $R^2$\ for the two AstroJEPA\ strategies. Raw is the backbone state; shared is the objective-facing 256-d state.}}{10}{table.10}\protected@file@percent }
+\newlabel{tab:full_strategy_probes}{{10}{10}{All frozen ridge-probe \rscore \ for the two \method \ strategies. Raw is the backbone state; shared is the objective-facing 256-d state}{table.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.2}Retrieval and shared geometry}{10}{subsection.E.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Exact retrieval over the 29,697-object test pool. Recall is percent.}}{10}{table.11}\protected@file@percent }
+\newlabel{tab:strategy_retrieval}{{11}{10}{Exact retrieval over the 29,697-object test pool. Recall is percent}{table.11}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Complete shared-space geometry and capacity summary. Map values are held-out global $R^2$; CCA values are mean canonical correlation.}}{10}{table.12}\protected@file@percent }
+\newlabel{tab:strategy_geometry}{{12}{10}{Complete shared-space geometry and capacity summary. Map values are held-out global \rscore ; CCA values are mean canonical correlation}{table.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces The complete strategy-comparison figure set: downstream accessibility, exact pair retrieval, representation retention, and shared/private accessibility. Numeric values appear in Tables\nobreakspace  {}\ref  {tab:full_strategy_probes}--\ref  {tab:retention}.}}{11}{figure.3}\protected@file@percent }
+\newlabel{fig:strategy_supp}{{3}{11}{The complete strategy-comparison figure set: downstream accessibility, exact pair retrieval, representation retention, and shared/private accessibility. Numeric values appear in Tables~\ref {tab:full_strategy_probes}--\ref {tab:retention}}{figure.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {F}Representation Analysis Before and After Alignment}{12}{appendix.F}\protected@file@percent }
+\newlabel{app:representation}{{F}{12}{Representation Analysis Before and After Alignment}{appendix.F}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.1}Raw representation retention}{12}{subsection.F.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces Same-modality retention between independently pretrained, sequential, and joint raw states. Spearman is sampled pairwise-cosine correlation.}}{12}{table.13}\protected@file@percent }
+\newlabel{tab:retention}{{13}{12}{Same-modality retention between independently pretrained, sequential, and joint raw states. Spearman is sampled pairwise-cosine correlation}{table.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.2}Linear shared/private accessibility}{12}{subsection.F.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces Mean $R^2$\ across redshift, mass, metallicity, age, and sSFR for total, cross-modally predictable, and residual components. Map is the global held-out cross-modal $R^2$.}}{12}{table.14}\protected@file@percent }
+\newlabel{tab:shared_private}{{14}{12}{Mean \rscore \ across redshift, mass, metallicity, age, and sSFR for total, cross-modally predictable, and residual components. Map is the global held-out cross-modal \rscore }{table.14}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.3}Morphology retention}{12}{subsection.F.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces Galaxy10 morphology retained by image states.}}{12}{table.15}\protected@file@percent }
+\newlabel{tab:morphology_retention}{{15}{12}{Galaxy10 morphology retained by image states}{table.15}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces The joint raw backbone preserves morphology while the shared projection filters it. Error bars are standard deviations across three stratified Galaxy10 splits.}}{13}{figure.4}\protected@file@percent }
+\newlabel{fig:morphology_retention}{{4}{13}{The joint raw backbone preserves morphology while the shared projection filters it. Error bars are standard deviations across three stratified Galaxy10 splits}{figure.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {G}Contrastive Baselines: Detailed JEPA vs.\ CLIP}{13}{appendix.G}\protected@file@percent }
+\newlabel{app:clip}{{G}{13}{Contrastive Baselines: Detailed JEPA vs.\ CLIP}{appendix.G}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.1}Frozen-backbone objective ablation}{13}{subsection.G.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {16}{\ignorespaces Frozen-adapter objective ablation, with the two end-to-end runs shown for context. Values are shared-space probe $R^2$.}}{13}{table.16}\protected@file@percent }
+\newlabel{tab:frozen_infonce}{{16}{13}{Frozen-adapter objective ablation, with the two end-to-end runs shown for context. Values are shared-space probe \rscore }{table.16}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.2}Control boundary}{13}{subsection.G.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {17}{\ignorespaces Exact test-pool retrieval. Recall is percent.}}{14}{table.17}\protected@file@percent }
+\newlabel{tab:clip_retrieval}{{17}{14}{Exact test-pool retrieval. Recall is percent}{table.17}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {18}{\ignorespaces Global, local, and information alignment. Neighborhood values are the machine-readable CSV results; they supersede rounded draft-report values.}}{14}{table.18}\protected@file@percent }
+\newlabel{tab:clip_geometry}{{18}{14}{Global, local, and information alignment. Neighborhood values are the machine-readable CSV results; they supersede rounded draft-report values}{table.18}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.3}Scientific probes and dimensional use}{14}{subsection.G.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {19}{\ignorespaces All raw and projected probe $R^2$\ for the scratch objective comparison. Bold marks the stronger objective within each modality/state.}}{14}{table.19}\protected@file@percent }
+\newlabel{tab:clip_probes}{{19}{14}{All raw and projected probe \rscore \ for the scratch objective comparison. Bold marks the stronger objective within each modality/state}{table.19}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {20}{\ignorespaces Effective rank. CLIP distributes variance over more directions, while JEPA+SIGReg yields stronger global cross-modal congruence.}}{15}{table.20}\protected@file@percent }
+\newlabel{tab:clip_rank}{{20}{15}{Effective rank. CLIP distributes variance over more directions, while JEPA+SIGReg yields stronger global cross-modal congruence}{table.20}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.4}Linear alignment and decoder transfer}{15}{subsection.G.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {21}{\ignorespaces Probe-decoder transfer after Procrustes alignment. Each decoder is trained on the source named in the direction and evaluated on the other modality. Values are $R^2$.}}{15}{table.21}\protected@file@percent }
+\newlabel{tab:decoder_transfer}{{21}{15}{Probe-decoder transfer after Procrustes alignment. Each decoder is trained on the source named in the direction and evaluated on the other modality. Values are \rscore }{table.21}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Primary JEPA+SIGReg versus CLIP diagnostics: exact retrieval, projected and raw CKA, pairwise geometry, local-neighborhood overlap, and linear cross-modal predictability.}}{16}{figure.5}\protected@file@percent }
+\newlabel{fig:objective_primary}{{5}{16}{Primary JEPA+SIGReg versus CLIP diagnostics: exact retrieval, projected and raw CKA, pairwise geometry, local-neighborhood overlap, and linear cross-modal predictability}{figure.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Additional objective diagnostics: raw/projected scientific probes, Procrustes retrieval, decoder transfer (including own, direct, and aligned scores), and covariance eigenspectra.}}{17}{figure.6}\protected@file@percent }
+\newlabel{fig:objective_extra}{{6}{17}{Additional objective diagnostics: raw/projected scientific probes, Procrustes retrieval, decoder transfer (including own, direct, and aligned scores), and covariance eigenspectra}{figure.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {H}Additional Downstream Results}{18}{appendix.H}\protected@file@percent }
+\newlabel{app:downstream}{{H}{18}{Additional Downstream Results}{appendix.H}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.1}Galaxy10 per-class behavior}{18}{subsection.H.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {22}{\ignorespaces Per-class recall and F1 for the selected independent ViT-L/14 checkpoint.}}{18}{table.22}\protected@file@percent }
+\newlabel{tab:galaxy10_classes}{{22}{18}{Per-class recall and F1 for the selected independent ViT-L/14 checkpoint}{table.22}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.2}Galaxy Zoo DECaLS question-wise probes}{18}{subsection.H.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {23}{\ignorespaces Public-split GZD-5 frozen-probe results for image SSL ViT-L/14 at 52k. F1 is macro-F1 within each question.}}{18}{table.23}\protected@file@percent }
+\newlabel{tab:gzd5}{{23}{18}{Public-split GZD-5 frozen-probe results for image SSL ViT-L/14 at 52k. F1 is macro-F1 within each question}{table.23}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.3}Published context and comparability}{18}{subsection.H.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {I}Additional Figures and Qualitative Diagnostics}{19}{appendix.I}\protected@file@percent }
+\newlabel{app:figures}{{I}{19}{Additional Figures and Qualitative Diagnostics}{appendix.I}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Unimodal image evaluation: fixed-seed redshift progression, Galaxy10 checkpoint selection, selected-model per-class behavior, and public-split GZD-5 context.}}{19}{figure.7}\protected@file@percent }
+\newlabel{fig:unimodal_quant}{{7}{19}{Unimodal image evaluation: fixed-seed redshift progression, Galaxy10 checkpoint selection, selected-model per-class behavior, and public-split GZD-5 context}{figure.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Patch-token PCA and CLS-attention comparison for the selected astronomy ViTs and reference image encoder. These visualizations show structured, object-centered responses but are qualitative diagnostics, not independent evidence for semantic localization.}}{20}{figure.8}\protected@file@percent }
+\newlabel{fig:attention}{{8}{20}{Patch-token PCA and CLS-attention comparison for the selected astronomy ViTs and reference image encoder. These visualizations show structured, object-centered responses but are qualitative diagnostics, not independent evidence for semantic localization}{figure.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Redshift coverage differs sharply between spectrum SSL and paired cross-modal training. The spectrum SSL train set contains 492,103/1,103,874 (44.58\%) objects at $z\geq 0.5$, whereas the paired union contains 12,766/307,428 (4.15\%). This shift is a plausible contributor to the cross-modal spectrum's redshift behavior and limits generalization beyond the paired population.}}{20}{figure.9}\protected@file@percent }
+\newlabel{fig:redshift_shift}{{9}{20}{Redshift coverage differs sharply between spectrum SSL and paired cross-modal training. The spectrum SSL train set contains 492,103/1,103,874 (44.58\%) objects at $z\geq 0.5$, whereas the paired union contains 12,766/307,428 (4.15\%). This shift is a plausible contributor to the cross-modal spectrum's redshift behavior and limits generalization beyond the paired population}{figure.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Expanded project schematic retained from the objective-comparison study. It distinguishes sequential AstroJEPA, joint AstroJEPA, and a scratch CLIP control, and motivates the shared/private/geometry diagnostics. Figure\nobreakspace  {}\ref  {fig:architecture}, rather than this control-oriented diagram, is the primary architecture figure.}}{21}{figure.10}\protected@file@percent }
+\newlabel{fig:legacy_schematic}{{10}{21}{Expanded project schematic retained from the objective-comparison study. It distinguishes sequential AstroJEPA, joint AstroJEPA, and a scratch CLIP control, and motivates the shared/private/geometry diagnostics. Figure~\ref {fig:architecture}, rather than this control-oriented diagram, is the primary architecture figure}{figure.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {J}Additional Ablations, Null Results, and Reproducibility Inventory}{22}{appendix.J}\protected@file@percent }
+\newlabel{app:ablations}{{J}{22}{Additional Ablations, Null Results, and Reproducibility Inventory}{appendix.J}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {J.1}Completed negative or qualified results}{22}{subsection.J.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {J.2}Incomplete or invalid experiments}{22}{subsection.J.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {24}{\ignorespaces Runs deliberately excluded from headline claims. Nothing in this table is silently promoted to a completed result.}}{22}{table.24}\protected@file@percent }
+\newlabel{tab:incomplete}{{24}{22}{Runs deliberately excluded from headline claims. Nothing in this table is silently promoted to a completed result}{table.24}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {J.3}Artifact-to-claim map}{22}{subsection.J.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {25}{\ignorespaces Repository experiment families audited for this manuscript.}}{22}{table.25}\protected@file@percent }
+\newlabel{tab:artifact_map}{{25}{22}{Repository experiment families audited for this manuscript}{table.25}{}}
+\@writefile{toc}{\contentsline {paragraph}{Statistical scope.}{22}{section*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Reproducibility.}{23}{section*.9}\protected@file@percent }
+\gdef \@abspage@last{30}
